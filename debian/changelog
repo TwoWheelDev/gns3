@@ -1,0 +1,244 @@
+gns3 (0.8.3-0.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Imported Upstream version 0.8.3 (Closes: #665979)
+
+ -- Zang MingJie <zealot0630@gmail.com>  Fri, 24 Aug 2012 21:42:11 +0800
+
+gns3 (0.7.4-1) unstable; urgency=low
+
+  * [89e8ad27] Imported Upstream version 0.7.4
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 12 Apr 2011 22:45:50 +0200
+
+gns3 (0.7.3-3) unstable; urgency=low
+
+  * [39d77211] [debian/control] move package to contrib section 
+  Thanks: Vincent Blut Closes: #619044
+  * [ff1dd714] Changed python version dependcies to 2.6 and higher 
+  Thanks: Stefano Rivera Closes: #606860
+  * [148a6308] move installed files from /usr/share/pyshared/GNS3 
+  to /usr/share/gns3 Thanks: Stefano Rivera
+
+ -- Erik Wenzel <erik@debian.org>  Wed, 23 Mar 2011 11:28:48 +0100
+
+gns3 (0.7.3-2) unstable; urgency=low
+
+  * [e4bafeb5] [rules] added pemubin.py (Closes: #595274)
+
+ -- Erik Wenzel <erik@debian.org>  Mon, 20 Dec 2010 09:52:07 +0000
+
+gns3 (0.7.3-1) unstable; urgency=low
+
+  * [6d1aabf3] Imported Upstream version 0.7.3
+  * [a8e64890] [control] bumped standards version. nothing changed
+
+ -- Erik Wenzel <erik@debian.org>  Fri, 17 Dec 2010 21:00:57 +0000
+
+gns3 (0.7.2-1) unstable; urgency=low
+
+  * [02a1a2ad] Imported Upstream version 0.7.2
+  * [5bf4592b] [control] bumpend standard version; nothing changed
+  * [12076afd] [control] moved python version to debian/pyversion
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 13 Jul 2010 22:50:19 +0200
+
+gns3 (0.7.1-2) unstable; urgency=low
+
+  * [a72d2847] [rules] removed bashisms (closes: 581482)
+  * [7e6d1e30] removed unused patches
+
+ -- Erik Wenzel <erik@debian.org>  Fri, 14 May 2010 00:29:03 +0200
+
+gns3 (0.7.1-1) unstable; urgency=low
+
+  * [3abce5c1] Imported Upstream version 0.7.1
+
+ -- Erik Wenzel <erik@debian.org>  Wed, 12 May 2010 11:32:59 +0200
+
+gns3 (0.7-2) unstable; urgency=low
+
+  * [0e35215b] [sources/format] fixed lintian warning missing-debian-
+    source-format
+  * [2ce774fe] [control] tighten dependency to python2.6 (Closes:
+    573583)
+  * [cbb69388] added qemuwrapper.py to /usr/share/doc/gns3/
+
+ -- Erik Wenzel <erik@debian.org>  Fri, 09 Apr 2010 00:52:09 +0200
+
+gns3 (0.7-1) unstable; urgency=low
+
+  * [a656e0d1] Imported Upstream version 0.7
+  * [bcff92ff] [control] bumped standards version (nothing changed)
+  * [756795c6] [control] changed packet description
+
+ -- Erik Wenzel <erik@debian.org>  Sat, 27 Feb 2010 23:06:48 +0100
+
+gns3 (0.7~rc1-2) unstable; urgency=low
+
+  * [afbf52f9] [control] changed architecture to all
+
+ -- Erik Wenzel <erik@debian.org>  Thu, 21 Jan 2010 21:15:28 +0100
+
+gns3 (0.7~rc1-1) unstable; urgency=low
+
+  * [a9ece7f0] Imported Upstream version 0.7RC1
+  * [7b3aaeb6] disabled patch 10_tmp_python-
+    script_shebang_removal_dynagen
+  * [50745be0] [README.source] added
+  * [5abc1bc9] disabled patch system
+  * [afbea757] [control] bumped standards version
+  * [2ab7d065] [control] changed architecture to any as lintian suggests
+
+ -- Erik Wenzel <erik@debian.org>  Mon, 18 Jan 2010 23:03:11 +0100
+
+gns3 (0.6.1-1) unstable; urgency=low
+
+  * [0aa7a4e4] Imported Upstream version 0.6.1
+  * [b9d42fc4] disabled call of debhelber tools
+  * [c69d2688] added call of update-desktop-database because of lintan
+    warning
+  * [08f89704] bumped standards-versions
+  * [a7644c73] changed package long description
+
+ -- Erik Wenzel <erik@debian.org>  Wed, 13 May 2009 21:40:16 +0200
+
+gns3 (0.6-2) unstable; urgency=low
+
+  * [47345b81] [control] changed architecture to all
+  * [e9ca7d8c] added file mode fix for debian patches in clean target
+  * [a1365432] [rules] added dh_desktop to target binary-install to call
+    update-desktop-database
+
+ -- Erik Wenzel <erik@debian.org>  Mon, 26 Jan 2009 15:47:11 +0100
+
+gns3 (0.6-1) unstable; urgency=low
+
+  * New Upstream Version
+  * [control] bumped standards-version
+  * Fix "Depends on python2.4 instead of python (>= 2.4)" added 
+    python to package depends (Closes: #489322)
+  * Fix "gns3 manual link add faild" by upstream (LP: #297815)
+  * [control] Vcs-Browser points to Eriks git
+
+ -- Erik Wenzel <erik@debian.org>  Sat, 20 Dec 2008 21:00:39 +0000
+
+gns3 (0.5-1) unstable; urgency=low
+
+  * New upstream release
+  * [control] fixed section
+  * Closes: #444665:  ITP: gns3 -- graphical user interface to ns-3 and
+            dynamips - Debian Bug report logs
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 20 May 2008 16:27:36 +0000
+
+gns3 (0.4.1-1) unstable; urgency=low
+
+  * New upstream release
+  * [control] added Homepage field
+  * [control] added vcs-homepage field
+  * [control] changed build dependencies
+  * [copyright] added years
+  * added config file management with ucf
+  * [control] added denconf dependency
+  * added patch 10_tmp_python-script_shebang_removal_dynagen.dpatch
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 01 Apr 2008 22:48:33 +0000
+
+gns3 (0.4-1) unstable; urgency=low
+
+  * New upstream release
+  * added global config file
+  * [control] added suggestion field for wireshark
+
+ -- Erik Wenzel <erik@debian.org>  Mon, 24 Mar 2008 21:13:53 +0000
+
+gns3 (0.3.2+20080318-1) unstable; urgency=low
+
+  * updated to 20080318 snapshot up to changeset: 530:f3fc55be0bc7
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 18 Mar 2008 15:41:13 +0000
+
+gns3 (0.3.2-1) unstable; urgency=low
+
+  * New upstream release
+  * removed TODO from debian/docs
+  * bumped standards-version
+
+ -- Erik Wenzel <erik@debian.org>  Sun, 03 Feb 2008 13:40:24 +0000
+
+gns3 (0.3.1-1) unstable; urgency=low
+
+  * new upstream release
+  * remove debian/examples
+  * add a man page for gns3
+  * added dpatch: 60_tmp_python-script_shebang_removal_dynagen
+
+ -- Erik Wenzel <erik@debian.org>  Wed, 17 Oct 2007 12:41:03 +0000
+
+gns3 (0.2alpha~snapshot20070930-1) unstable; urgency=low
+
+  * updated to 20070930 snapshot up to changeset: 424:f8a2c3da64d2
+  * Closes: #444665:  ITP: gns3 -- graphical user interface to ns-3 and dynamips - Debian Bug report logs
+
+ -- Erik Wenzel <erik@debian.org>  Sun, 30 Sep 2007 09:33:43 +0000
+
+gns3 (0.2alpha~snapshot20070925-1) unstable; urgency=low
+
+  * updated to 20070925 snapshot up to changeset: 393:cfa25b6b868e
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 25 Sep 2007 19:48:31 +0000
+
+gns3 (0.2alpha~snapshot20070923-1) unstable; urgency=low
+
+  * updated to 20070923 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Sun, 23 Sep 2007 10:17:31 +0000
+
+gns3 (0.2alpha~snapshot20070922-1) unstable; urgency=low
+
+  * updated to 20070922 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Sat, 22 Sep 2007 00:17:05 +0000
+
+gns3 (0.2alpha~snapshot20070919-1) unstable; urgency=low
+
+  * updated to 20070919 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Wed, 19 Sep 2007 14:30:25 +0000
+
+gns3 (0.2alpha~snapshot20070918-1) unstable; urgency=low
+
+  * updated to 20070918 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 18 Sep 2007 21:52:16 +0000
+
+gns3 (0.2alpha~snapshot20070917-1) unstable; urgency=low
+
+  * updated to 2007-09-17 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Mon, 17 Sep 2007 20:30:04 +0000
+
+gns3 (0.2alpha-1~snapshot20070916-1) unstable; urgency=low
+
+  * updated to 2007-09-16 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Sun, 16 Sep 2007 09:14:20 +0000
+
+gns-3 (0.2alpha-1~snapshot20070914-1) unstable; urgency=low
+
+  * updated to 2007-09-14 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Fri, 14 Sep 2007 09:36:19 +0000
+
+gns-3 (0.2alpha-1~snapshot20070906-1) unstable; urgency=low
+
+  * updated to 2007-09-06 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Thu, 06 Sep 2007 19:53:13 +0000
+
+gns-3 (0.2alpha-1~snapshot20070904-1) unstable; urgency=low
+
+  * updated to 2007-09-04 snapshot
+
+ -- Erik Wenzel <erik@debian.org>  Tue, 04 Sep 2007 06:33:15 +0000

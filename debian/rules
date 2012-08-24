@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+# Copyright © 2003 Colin Walters <walters@verbum.org>
+# Copyright © 2004, 2005, 2006 Loic Minier <lool@dooz.org>
+# Copyright © 2012 Zang MingJie <zealot0630@gmail.com>
+
+DEB_PYTHON_SYSTEM = pysupport
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/python-distutils.mk
+
+DEB_PYTHON_INSTALL_ARGS_gns3 += --install-lib /usr/share/gns3
+
+DEB_INSTALL_MANPAGES_gns3 := debian/gns3.1
+
+binary-predeb/gns3::
+	install -D -m 644 debian/gns3.xpm debian/$(cdbs_curpkg)/usr/share/pixmaps/gns3.xpm
+	install -D -m 644 debian/gns3.desktop debian/$(cdbs_curpkg)/usr/share/applications/gns3.desktop
+	install -D -m 644 debian/x-gns3.desktop debian/$(cdbs_curpkg)/usr/share/mimelnk/applications/x-gns3.desktop
+	install -D -m 644 debian/gns3.ini debian/$(cdbs_curpkg)/usr/share/doc/gns3/gns3.ini
+	install -D -m 644 baseconfig.txt debian/$(cdbs_curpkg)/usr/share/doc/gns3/baseconfig.txt
+	install -D -m 644 baseconfig_sw.txt debian/$(cdbs_curpkg)/usr/share/doc/gns3/baseconfig_sw.txt
+	mv debian/$(cdbs_curpkg)/usr/bin/gns3 debian/$(cdbs_curpkg)/usr/share/gns3
+	dh_link -p $(cdbs_curpkg) /usr/share/gns3/gns3 /usr/bin/gns3
+
+clean::
+	rm -rf debian/compat
+	rm -rf debian/pycompat
+	rm -rf debian/stamp-patched
+

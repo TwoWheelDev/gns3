@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Exec=gns3
+Name=gns3 Graphical Network Simulator
+Comment=program to simulate networks
+Comment[de]=Ein Programm zur Simulation von Netzwerken
+GenericName=Simulation Tool
+GenericName[de]=Simulationswerkzeug
+Icon=/usr/share/pixmaps/gns3.xpm
+MimeType=application/x-gns3
+Categories=Utility;Education;
