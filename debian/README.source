@@ -1,2 +1,0 @@
-git, git-buildpackage, devscripts and cdbs are controlling the build process.
-Patches are handled by dpatch.
