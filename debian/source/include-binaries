@@ -1,0 +1,5 @@
+debian/additional/icons/hicolor/32x32/apps/gns3.png
+debian/additional/icons/hicolor/16x16/apps/gns3.png
+debian/additional/icons/hicolor/48x48/apps/gns3.png
+debian/additional/icons/hicolor/48x48/mimetypes/application-x-gns3.png
+debian/additional/gns3.ini
