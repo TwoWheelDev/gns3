@@ -1,0 +1,366 @@
+CHANGELOG
+
+GNS3 0.8.3
+
+  New features:
+ 
+  * Option to freely use the first VBox interface inside VMs (i.e. eth0 on Linux).
+  * New base configuration (startup-config) for devices with NM-16ESW (named baseconfig_sw.txt).
+  * Console and headless mode support for VirtualBox devices.
+  * Embedded console/terminal server to access VirtualBox VM consoles using Telnet.
+  * Support for drag & drop of topology files inside GNS3.
+  * Double quote support for Qemu options and ASA kernel/initrd command lines.
+  * Import & export for GNS3 configuration file (gns3.ini).
+  * Global TCP port tracker to allocate ports and avoid conflicts (console + AUX ports for IOS routers and console ports for Qemu-like/VirtualBox devices are tracked)
+  * Scripts for using consoles with VBox VMs (Windows only).
+  * Backup nvram export when Dynamips has crashed.
+  * New command line option for patched Putty on Windows (for details: http://forum.gns3.net/topic4859-20.html).   
+  * Experimental live pipe capture (Windows only).
+  * Option (activated by default) to use the VirtualBox VM names to name VirtualBox devices in GNS3.
+  * Complete IPv6 support (with correct functions).
+  * Support for binding on specific addresses when loading a topology
+  * Option to track opened node consoles in order to close them when the node gets deleted.
+  * New Dynamips 0.2.8-RC4 community (full IPv6 support), only included in Windows all-in-one package for now.
+
+  Fixes and other improvements:
+
+ * Fixed issue when saving as a project.
+ * Workaround: sparse memory feature is not activated on c2600 and c1700 platforms because Dynamips can freeze after IOS restarts (Windows only).
+ * Added Idle PC help button to gives some hints how to get good idle pc values.
+ * Prevent tail processes staying in memory after stopping captures.
+ * Fixed/improved some console command lines (SecureCRT, TeraTerm, Putty)
+ * Fixed issue when connecting recent Qemu (new -net syntax) to other non-Qemu devices.
+ * Fixed vboxwrapper loading issue for DMG version on OSX.
+ * Fixed rpcap interface name parsing on Windows.
+ * Improved securecrt.vbs to "press" a enter into the device console to show the prompt. 
+ * Modified default IOS startup-config (baseconfig.txt).
+ * Handle connection lost during Idle pc calculation.
+ * Warn users if their working directories are not accessible and/or writable.
+ * Allow dash and brackets for device hostnames.
+ * Option to clear stopped captures from the captures dock.
+ * Italian and Chinese translations updated.
+ * Fixed bug that prevented loading topologies with non-existing IOS paths.
+ * Some minor fixes for recent files menu (add saved file paths, order, non existing path entries are removed etc.)
+ * New key shortcuts for object rotation (notes, ellipses, rectangles). ALT and + (or P) / ALT and - (or M).
+ * Removed default shell execution for console programs.
+ * Default delay between each device start when starting all devices is now 1 second.
+ * Auto-increment base AUX port for external hypervisors.
+ * MessageBox "Object moved to a background layer ..." is now displayed only once by execution.
+ * Fixed issue when starting a capture on a node without any links (!)
+ * Fixed problem with version comparison in "Check for Update" feature.
+ * Fixed multi-window opening issue with snapshot dialog.
+ * Added recent files button for the project window.
+ * Press escape to stop adding a link.
+ * Detect old GNS3 configuration and ask user to clear it.
+ * Fixed minor issues with the Ethernet Switch.
+ * Prevent capture for Pemu and decorative nodes.
+ * Show VirtualBox version in ver command.
+ * Support for more characters (e.g. #) in annotations.
+ * New wrappers installation directory on Linux.
+ * Prevent to use the same VBox VM multiple times.
+ * Check that the first 10 ports of every TCP base are free to use when testing the settings in preferences.
+ * Fixed minor issue with path normalization on Windows.
+ * Time reference for debugs, auto saving messages and logged exceptions.
+ * Log file dynagen_exception.log has been renamed import_exception.log (date + GNS3 version is added into the file).
+ * Command 'show ports' to display all port allocations.
+ * NVRAM configuration extractor utility for Windows.
+ * Smarter handling of errors when starting/stopping/suspending all nodes.
+ * Do not show special cursors when a rectangle or ellipse is on the background layer.
+ * Qemuwrapper base UDP has been changed from 20000 to 40000.
+ * Qemuwrapper base console has been changed from 3000 to 3001.
+ * VBoxwrapper base console has been changed from 3900 to 3501.
+
+GNS3 0.8.2 - 13.03.1012
+
+ * The issue with Qemu VMs that were stuck on “Booting from Hard Disk” message when using Qemu Manager on Linux has been fixed.
+ * Vboxwrapper can be started on a remote host and VirtualBox VMs locally controlled in GNS3.
+ * Loopback Manager included in Windows all-in-one now work on Win7/Vista.
+ * Start/pause/stop icons are colored as before BETA2.
+ * Checks for the correct version of Qemuwrapper and VBoxwrapper.
+ * New SecureCRT command line for OSX in terminal settings preferences.
+ * New option to set a delay between console when consoling to all devices.
+ * Qemu <-> VBox linking has been fixed.
+ * FlexiNetwork VirtualBox feature has been patched.
+ * Italian translation has been updated.
+ * Give a chance to hypervisor/wrapper processes to stop before they get killed.
+ * An issue when trying to choose the file in the Startup-Config dialog has been fixed.
+ * Additional check to avoid false positives when detecting compressed IOS.
+ * Symbol import/export issue for 'Cloud' nodes has been fixed.
+ * Windows interface names with non-ascii characters are now supported.
+ * Unicode support improvements.
+
+GNS3 0.8.2 BETA2 - 31.01.2012
+
+ * IOS images can be directly uncompressed by GNS3.
+ * Open recent files menu.
+ * “Start all captures” and “stop all captures” options for Captures Dock.
+ * New icons with fancy hover effects (start, stop, pause, ellipse and rectangle).
+ * Farsi, Czech, Japanese and Italian translations updated.
+ * GNS3 settings file (gns3.ini) can be put in the same folder as gns3.exe (Windows only). This allows GNS3 to be standalone on USB stick for instance.
+ * New host device: a cloud with the ‘computer’ symbol and configured with all host interfaces.
+ * Qemu mac address generator has been fixed.
+ * Access to VirtualBox Manager from the GUI.
+ * Soft link gns3 -> gns3.pyw has been added (Unix/Linux only).
+ * Changed default paths for wrappers on OSX and UNIX/Linux.
+ * Wrappers are now GPL licensed.
+ * PEMU binary has been removed from our sources (it is still available on our download page).
+ * Capture option is now available from the “Device” contextual menu.
+ * Link actions are available from the summary topology window pane.
+ * Show rpcap interface names in a tooltip when hovering an entry in the interface menu (Windows only).
+ * Qemuwrapper support for the new Qemu networking syntax.
+ * Option to send Qemu and Qemu-img paths to an external Qemuwrapper.
+ * Possibility to use stylesheets from the view menu, for now only the ‘Energy saving’ theme is available.
+ * Tooltip for clouds.
+ * User guidance: status bar messages.
+ * Splash screen at startup.
+ * Small improvements and bug fixes all over the place.
+
+GNS3 0.8.2 BETA - 12.12.2011.
+
+ * Official integration of VirtualBox Edition features.
+ * Auto-update checker / notifier (by default disabled on Linux, BSD, enabled on Mac and Windows).
+ * Qemu got a predictable MAC address pseudo-random number generator (brezular’s case).
+ * VirtualBox interface numbering match VBox VM vNics numbering – VBox ethernet adapter now starts counting with “e2″, instead of “e0″ to remove confusion with VBox GUI. (this change may break existing topologies, so people will need to manually edit them. Making automatic converter is too problematic.)
+ * Windows version is now pre-compiled. (like in v0.7.x), 64-bit version is introduced.
+ * Windows all-in-one package includes Wireshark.
+ * Windows all-in-one package allows you to choose between 32-bit and 64-bit versions.
+ * Live Capture is now enabled by default on all platforms.
+ * Fixed screenshots (enabled Qt 4.7.x library in GNS3 + shipped Qt 4.7.4 on Windows)
+ * Dynagen: Fixed standalone text-mode / CLI operation.
+ * Fixed QemuManager, which failed to start qemuwrapper.py (Windows XP hosts only).
+ * Main: should start from relative paths now.
+ * GUI: Hide display window errors fixed.
+ * GUI: got new ‘Device’ menu mirroring contextual menu (right-click on a device).
+ * GNS3 version is saved in topology files.
+ * Many small GUI improvements all over the place. (RedNectar’s wishes).
+ * Improvements for setup Wizard and first time users.
+ * Reverted GUI limit to hide Linux options (VDE, NIO_Linux, KVM) due to use case: Windows GUI + Linux server.
+ * Experimental:  layers < 0 are now considered background layers. Only annotations, pictures and shaped items can be on a background layer. Once on a background layer, an item cannot be selected and moved anymore. However they still can be individually selected why right-click.
+
+GNS3 0.8.0 VirtualBox Edition
+
+  Major Improvements:
+
+ * VirtualBox support (v4.1 required)
+ * Wireshark Live Traffic Capture
+ * Basic IPv6 enablement
+ * Basic Netbook enablement
+ * Architecture: On Windows, GNS3 now runs from source code
+ * Architecture: PEMU is now moved from GNS3 core to a separate component. (PEMU will be part of Windows "All-in-One" installer)
+ * Architecture: Resolved conflict with Debian's built-in GNS3 package. On Linux, setup is no longer needed.
+ * Dynagen Console got a massive rewrite / cleanup
+ * Russian translation got a major update
+
+  Other Changes and Fixes:
+
+ * Windows Setup was rewritten from scratch
+ * Changed Default Qemu Ethernet Controller from "e1000" to "Realtek 8139" for Windows XP compatibility.
+ * GUI: Swapped AUX & Console icons - more convenient to have "console" button near "start" button. 
+ * Disallowed to hot-add new links to running Qemu.
+ * Fixed VM states coherency between Dynagen's Console and GNS3.
+ * Several fixes for using GNS3 with external qemu/vboxwrappers (multi-host distributed topologies)
+ * GUI: Disabled Linux features on Windows hosts. (KVM, NIO_VDE, NIO_UNIX and NIO Linux Ethernet)
+ * GUI: Disallowed connecting devices with incorrect link types, such as Frame-Relay switches with Ethernet cable.
+ * Fixed the problem of filled WIC slots in Routers (0.7.4 Regression; UldisD's case)
+ * Fixed SecureCRT (SARS' case, minor bug; Windows hosts only)
+ * Terminal Emulator Settings: sorted & hide non-platform-related options
+ * Fixed AUX port error messages
+ * Fixed translation file generator
+ * Dynagen Console: 'hypervisors', 'ver' and 'versions' commands are now merged into just 'ver'.
+ * Dynagen Console: 'exit' and 'disconnect' commands are now merged into 'clear topology'.
+ * Dynagen Console: Removed non-working commands: 'shell', 'cpuinfo', 'py', 'conf', 'confreg', 'hypervisor', 'end', 'send'
+ * For full list of changes, see "modified.txt"
+
+  VirtualBox / vboxwrapper backend features:
+
+ * FlexiNetwork: Link hot-add/hot-remove
+ * Traffic Capture
+ * Suspend/Resume VMs
+ * Instant reboot
+ * "automatic" NIC type (just mirrors existing NIC type)
+ * Network statistics (Bytes Transmitted / Bytes Received)
+ * View of Guest OS IP addresses, by retrieving data from Virtual machine (if GuestAdditions installed)
+ * GuestControl execution; send commands from Dynagen console
+ * Double-click on VBOX VM brings it's display window to front.
+ * Modular design
+
+GNS3 0.7.4 - 11.04.2011.
+
+ * AUX ports integrated in the GUI
+ * Greek translation
+ * Hypervisor allocation per IOS type
+ * Improvements on Ethernet Switch (dynamic remapping of VLAN or type)
+ * Adaptations to support Dynamips 0.2.8 RC3 community
+ * Integration of a loopback manager for Windows
+
+GNS3 0.7.3 - 12.12.2010.
+
+ * Easily change the symbol of one or several nodes (Select a node, then right click -> Change symbol).
+ * A docked window to see on what device interface captures are running (View -> Docks -> Captures). You can stop capturing or start Wireshark using this view.
+ * Only the necessary files (nvram, flash, disks etc.) are copied or kept when creating projects and snapshots.
+ * Preventing unsaved interface labels to show up after loading a topology. This can be reset using the "show interface labels" button.
+ * Improvements for ATM and Frame Relay switches: proper naming, dynamic mapping support and it is not needed to remove a link to change its DLCI/VC mapping.
+ * PCAP capture support for Qemu based devices (Qemu host, JunOS ASA, PIX, IDS). This option cannot be used after the selected device is started.
+ * Fixed many issues with the snapshot feature. Now it should work as expected.
+ * New node type: EtherSwitch router. This is a c3700 router with a Etherswitch NM-16ESW loaded.
+ * Better consistency between buttons and menus. Many items have been renamed, toolbar buttons accessible from the menu etc.
+ * Possibility to configure the AUX port. Only works for c7200 routers (Preferences -> Dynamips -> Base AUX port).
+ * Changed standard naming convention for project and snapshots. Topology file is named topology.net, working directory: working and configurations directory: configs.
+ * Duplicate option for annotations, ellipses and rectangles (Select an item, right click -> Duplicate).
+ * Horizontal + vertical alignment options (Select nodes, right click -> Align horizontally/vertically).
+ * Possibility to have multiple images for Qemu hosts, JunOS, PIX, ASA and IDS and to configure the number of interfaces on each devices.
+ * Autosave feature to save your topology every x secondes (Preferences -> General).
+ * A default base config (with hostname, exec-timeout commands etc.) is automatically loaded when creating a new IOS based router. The path to this default config can be changed in "IOS images and hypervisors" dialog.
+ * A more understandable MAC address table for Ethernet switches (right click on a switch -> Show MAC address table).
+ * Qemuwrapper improvements like cleaning old FLASH/SWAP files when creating a new device with a same hostname.
+ * Multi Qemu based devices topologies now work using base images on Windows. Patched in Qemu 0.11.0 binary included in the all-in-one package (thanks tranzitwww!!!).
+ * Support for unbasing Qemu images when creating or saving as a project. This means no dependencies with your base images thus you can easily distribute your project.
+ * Option to replace unknown references (GUID: \device\npf_{802b5272-cd1b-431c-8cb5-f57ba76145c6}) to network interfaces on Windows when loading a NET file.
+ * Option to replace unknown IOS image when loading a NET file.
+ * Scroll the scene with the mouse middle click or right and left clicks a the same time. This behavior is to be changed in a future release.
+ * Possibility to specify a directory where GNS3 settings file (gns3.ini) is located with the parameter --config-dir on the command line.
+ * Romanian translation (thanks to tranzitwww).
+ * Double click on a running node opens a console.
+ * Reload all devices option.
+ * French and Italian translation updates.
+
+GNS3 0.7.2 - 16.06.2010
+
+ * Lot of small fixes (relative paths, link removal, .net loading, Ethernet switch connection to a Cloud etc.)
+ * Qemuwrapper: random MAC address for devices
+ * NPE-G2 option for c7200 routers (need a specific and uncompressed IOS image and C7200-IO-2FE, C7200-IO-GE-E, PA-2FE-TX and PA-GE are unlikely to work)
+ * Simulated switch daisy chaining support
+ * Improved directory selection for new projects
+ * New translations: Bulgarian, Italian and Ukrainian
+ * Frame Relay capture option for all serial links
+ * Dialog to display the MAC address table of a simulated Ethernet switch
+ 
+ The following features will work only with Dynamips version > 0.2.8 RC2:
+ 
+ * OIR (Online Insertion and Removal) for c3660 and c3745 (only NM-4T).
+ * JIT sharing support (saves memory).
+ * C7200-JC-PA Jacket Card support. Allow the use of a slot 7 for c7200 routers with NPE-G2.
+ * QinQ support for simulated Ethernet switches.
+ * Interfaces statistics (Packets in, Packets out, Bytes in, Bytes out). Displayed in node tooltips.
+
+GNS3 0.7.1 - 29.04.2010
+
+ * Qemuwrapper (option to listen on a IP/host and port).
+ * Basic support for external hypervisors.
+ * Some improvement for projects under GNS3 (still work to do).
+ * Many small bugs fixes (graphical, cloud connection etc.)
+
+GNS3 0.7 - 27.02.2010
+
+ * Support & debugging on Windows 7.
+ * Qemuwrapper improvements & Windows compatibility.
+ * Integration of Cisco IDS/IPS, including a new symbol.
+ * Qemu 0.11.0 patched and Putty have been added in the Windows all-in-one package.
+ * An option to show the z coordinate of any object on the scene (View -> Show layers).
+ * Interface labels follow their moving parent nodes.
+ * Modified interface labels are saved in .net files.
+ * Option to slow start nodes (wait x seconds between each start).
+ * Links connected to Qemu based nodes are now removable (nodes have to be shutdown to do so).
+ * Possibility to set an hypervisor for Ethernet switches, ATM switches, ATM bridges and Frame Relay switches.
+ * New symbols for voice labs (Call manager, SIP server, IP phone, voice router, voice access server and PBX).
+ * New dialog window to browse and change a router startup-config.
+ * Undo/redo of actions is now supported.
+ * Qemu & qemu-img paths are saved in .net files if needed.
+ * Slight improvements for the snapshot system, including a new dialog window to manage it.
+ * Wics description in tooptips.
+ * Wics restoration from .net files.
+ * Support of relative paths in .net files (if the base path is the same as the .net file).
+ * Test button to validate you can launch Qemuwrapper, Qemu and qemu-img.
+ * New translation in Czech (thanks to Ondrej Filip).
+ * Lot of various small bug fixes and improvements.
+
+GNS3 0.7RC1 - 23.12.2009
+
+ * Qemu integration.
+ * JunOS & ASA integration using Qemu.
+ * An undo/redo framework (unstable).
+ * Translations in Italian and Farsi.
+ * Various bugs fixes and improvements.
+
+GNS3 0.6.1 - 13.05.2009
+
+Improvements:
+
+ * Copy an inserted image in the project's working directory and update its path in the .net file.
+ * Prevent auto-generated interface notes to be recorded in the .net file.
+ * Display an error msg box if a working directory can't be used by an hypervisor. 
+ * Check if a hostname has already been used when creating a new node.
+ * Warn to use manual links when a user select a NM-16ESW module.
+ * Check if GNS3 is running on a Windows 64 bits OS in order to choose the correct path to Putty. 
+ * Check IOS and working directories paths when creating new nodes and throw a warning to the user if something is wrong.
+ * Button to edit project settings.
+
+Fixes:
+
+ * Prevent notes to be deleted when typing the delete key while editing.
+ * Prevent NM-16ESW modules to be removed from routers when using Ethernet/FastEthernet links.
+ * Tooltips update when starting/stopping/suspending routers.
+ * Bug with Qt 4.5 on selected filter when openning a project (getOpenFileName) 
+ * 99MB limit for pcmcia disks. 
+ * Unicode errors with TMP env variable on Windows. 
+ * AttributeError: value of `chassis' must be of type string.
+ * Merge correct config paths when loading a .net create on a different platform.
+
+GNS3 0.6 - 15.12.2008
+
+ * Users can change the workspace size.
+ * Possibility to draw rectangles and ellipses.
+ * Feature to automatically create labels of interface names.
+ * Multi-links drawing (no overlaps).
+ * Snapshot feature.
+ * Interface names are included in the Generic Ethernet NIO list on Windows.
+ * New export to images (JPEG, PNG ...) that allows to export all the workspace (and not only what you see).
+ * "Expand all" and "collapse all" features for the topology summary panel (contribution by beduev).
+ * Annotations, rectangles and ellipses can be rotated.
+ * On Windows, users can load an alternative gns3.ini by setting a path on command line, example: gns3.exe --configdir <path_to_dir_containing_gns3.ini>
+
+GNS3 0.5: - 29.04.2008
+
+ * Possibility to load .net files of other users (provided that there is a registered IOS image with the same model as the one used in the NET file).
+ * New detailed tooltips for nodes. 
+ * A minimalist wizard raised when the configuration file is empty.
+ * A button to insert a picture on the scene.
+ * Decorative node support for creating network diagrams.
+ * Ghostios is now supported on remote hypervisors.
+ * A symbol manager with library support (a howto to create a symbol library will be released).
+ * Z values can be changed for annotations and inserted pictures.
+ * Automatic load-balancing on external hypervisors (choose multiple external hypervisors when recording an IOS image).
+ * New option to bind the hypervisor manager with an address/name other than 'localhost': useful for labs which use local and remote hypervisors.
+
+GNS3 0.4: - 21.03.2008
+
+ * Dynamic mode (no design/emulation modes).
+ * New .net import/export.
+ * WICS support.
+ * PEMU support.
+ * GUI improvements.
+ * ATM bridge.
+ * Capture feature for links.
+ * Annotation feature.
+ * Project settings.
+ * NULL NIO.
+ * IDLE PC calculation from the GUI.
+ * New languages.
+
+GNS3 0.3 beta:
+
+ * Support of Ethernet, ATM and Frame-Relay switches
+ * Included hub (Bridge of Dynamips) and cloud (external connections) devices
+ * Added the Dynagen console (nearly all commands supported)
+ * New GUI settings
+ * Improved node configurator
+ * Support of the Dynagen INI-like configuration file
+ * Multi-language support (howto for translators soon)
+ 
+
+GNS3 0.2 alpha:
+
+ * Hypervisor load-balancing to address the per process limit problem (http://dynagen.org/tutorial.htm#_Toc165530762)
+ * Configuration of multiple node.
+ * Users can change hostnames.
+

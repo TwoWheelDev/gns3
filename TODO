@@ -1,0 +1,59 @@
+TODO LIST
+
+GUI
+
+ * Add a Clear startup configuration button and/or add a Clear All Startup configurations option to the control menu.
+ * Style options for node labels.
+ * Option to draw lines and arrows on the scene.
+ * Drag'n'drop a topology (.net file) inside GNS3
+ * Create more 'Show advanced options' where there are too many options in Preferences.
+ * New logo for GNS3?
+ 
+OSX
+
+ * Open .net files from Finder on Mac OS X (http://www.gns3.net/phpBB/topic1817.html)
+ * DMG installer for Mac OS X (http://chromasoft.blogspot.com/2010/02/building-dmg-installer-for-mac-simple.html)
+
+Dynamips
+
+ * NIO Multicast support, is this useful? (supported only in dynamips-community version) 
+ * Set system ID (can be useful for pageant IOS)
+ * Test implemented QinQ
+ * Automatic console login for IOS (idlepc is not effective until hitting returns in the IOS console), use expect scripts?
+ * Auto UDP (supported in dynamips-community): to simplify the UDP port mapping stuff and the binding problems that can occur
+ 	-> The first command to use is: "nio create_udp_auto <nio_name> <local_addr> <local_port_start> <local_port_end>"
+ 	-> It will return the allocated port number. local_addr is an IPv4/IPv6 address (0.0.0.0 on IPv4 and :: on IPv6 to listen on all addresses). local_port_start and local_port_end define a port range (it can be useful if you are behind a firewall).
+	-> On the remote side: nio connect_udp_auto <nio_name> <remote_host> <remote_port>
+    -> remote_host being the host where nio create_udp_auto was called, and remote_port the port number returned by it.
+
+Client/Server
+
+ * Dynamips Management Server intended for teaching environments (not need to share an IOS image).
+ * Client/Server protocol should become asynchronous, so users won't wait until all VMs actually start.
+
+Misc. (by Technologov)
+
+ * Investigate possibility of GuestIP address retrieval from Dynamips Routers by means of SNMP 
+     (+pre-configured SNMP startup-config + management interface)
+
+GNS3 related feature requests in 3rd party products: (by Technologov)
+
+ * IPv6 support for our engines: VirtualBox / Qemu / Dynamips
+ * Qt4: [feature-request] Please add new GUI container element, that shows/hides others, "QIArrowButtonSwitch" (QTBUG-19984)
+ * VirtualBox: serial port TCP / Telnet listener (Wish #1851)
+ * VirtualBox: Direct Linux Boot (required for ASA guests; Wish #8401)
+ * VirtualBox: PEMU key+serial injection (required for PIX guests)
+ * VirtualBox: [feature-request] Please support 16 vNICs per VM (Wish #8805)
+ * VirtualBox: [feature-request] GuestControl execute must automatically handle extensions, like shell does (Wish #9035)
+ * VirtualBox: [feature-request] Guest Additions: Please provide clipboard copy paste for text-mode console VMs (without X.org) (Wish #9291) (jarle's case)
+ * VirtualBox: Multicast support (many procotols use multicast, like OSPF, RIPv2 etc.)
+
+GNS3 related bugs in 3rd party products: (by Technologov)
+
+ * VirtualBox: Guest IP retrieval works incorrectly if you have several IP addresses on the same NIC (bug #9006)
+ * VirtualBox: Only first 4 out of 8 ethernet cards work with Windows XP guest (bug #8772)
+ * VirtualBox: Critical bug(!!!): VBoxSVC locks up on Windows XP hosts; reproducible with my vboxtestcase.py
+    (happens on VM stop and on netadp disable.) (VBox bug #9239)
+    This leads to GNS3 lock-ups and crashes.
+ * VirtualBox: GuestControl execution from python fails on Windows hosts. (Bug #9295)
+ * Cloud not working for NIO_GenEth on window 64-bit, most likely because Dynamips is not 64-bit compiled (this would require cygwin 64-bit which doesn't exists).
