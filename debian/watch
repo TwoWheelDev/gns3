@@ -1,2 +1,3 @@
 version=3
-http://sf.net/gns-3/GNS3-(.*)-src\.tar\.gz
+opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|BETA|beta|alpha|b|a)[\-\.]?\d*)$/$1~$2/ \
+http://qa.debian.org/watch/sf.php/gns-3/GNS3-(\d.*)-src\.(?:tgz|tbz2|txz|tar\.(?:gz|bz2|xz))
