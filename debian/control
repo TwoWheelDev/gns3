@@ -3,7 +3,7 @@ Section: contrib/net
 Priority: optional
 Maintainer: Daniel Lintott <daniel@serverb.co.uk>
 Build-Depends: debhelper (>= 9), python
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 Homepage: http://www.gns3.net/
 Vcs-Browser: https://github.com/dlintott/gns3-packaging
 Vcs-Git: https://github.com/dlintott/gns3-packaging.git
