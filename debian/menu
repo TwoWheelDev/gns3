@@ -1,8 +1,8 @@
 ?package(gns3):						\
 	needs="X11"					\
-	section="Applications/Education"			\
-	title="GNS3 Network Simulation Tool"		\
-	command="/usr/bin/gns3"				\
+	section="Applications/Education"		\
+	title="GNS3"					\
+	command="gns3"					\
 	hints="Simulation"				\
 	icon="/usr/share/pixmaps/gns3.xpm"		\
-	longtitle="GNS3 Network Simulation Tool"
+	longtitle="GNS3 Graphical Network Simulator"
