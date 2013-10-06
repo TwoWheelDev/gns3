@@ -14,6 +14,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, dynamips (>=0.2.8), python-qt4 (>=4.5), xdotool, xterm
 Conflicts: gns3
 Replaces: gns3
+Recommends: wireshark
 Description: Graphical Network Simulator
  GNS3 is a graphical network simulator that allows simulation of
  complex networks and to launch simulations on them. It is an excellent
