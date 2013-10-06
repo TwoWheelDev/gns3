@@ -2,12 +2,13 @@ gns3 (0.8.5-1) unstable; urgency=low
 
   * New maintainer (Closes: #725345)
   * [d0dbe9d0] Imported Upstream version 0.8.5
-  * [231483cb] Switch build-system to debhelper & bump standards-version
+  * [231483cb] Switch build-system to debhelper
+  * [f0792800] Bump standards version to 3.9.4
   * [f23759cf] Switch copyright to machine readable format (DEP-5) and 
   update for new maintainer
   * [17f68dca] Update postinst, postrm scripts. Create prerm script
   * [26b1a6bd] Update debian/watch
-  * [e2aef91e] Added dependancies for xdotool, xterm (Closes: #626464)
+  * [e2aef91e] Added dependencies for xdotool, xterm (Closes: #626464)
   * [4065b7d8] Add recommends: wireshark (Closes: #622159)
 
  -- Daniel Lintott <daniel@serverb.co.uk>  Sun, 06 Oct 2013 14:41:09 +0100
