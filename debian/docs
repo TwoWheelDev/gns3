@@ -1,3 +1,6 @@
 AUTHORS
+baseconfig.txt
+baseconfig_sw.txt
 README
 TODO
+debian/additional/gns3.ini

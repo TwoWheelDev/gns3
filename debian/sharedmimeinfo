@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-gns3">
+        <comment>Dynagen Network File</comment>
+	<comment xml:lang="en">Dynagen Network File</comment>
+	<glob pattern="*.net"/>
+    </mime-type>
+</mime-info>
