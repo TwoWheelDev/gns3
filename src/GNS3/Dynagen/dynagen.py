@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 
 """
 dynagen
@@ -36,16 +35,17 @@ import sys
 import os
 import re
 import traceback
+import time
 from console import Console
 from dynamips_lib import Dynamips, PA_C7200_IO_FE, PA_A1, PA_FE_TX, PA_4T, PA_8T, \
      PA_4E, PA_8E, PA_POS_OC3, Router, C7200, C3600, Leopard_2FE, NM_1FE_TX, NM_1E, NM_4E, \
-     NM_16ESW, NM_4T, DynamipsError, DynamipsWarning, Bridge, FRSW, ATMSW, ETHSW, ATMBR, \
+     NM_16ESW, NM_4T, DynamipsError, DynamipsWarning, Bridge, FRSW, ATMSW, ETHSW, Hub, ATMBR, \
      NIO_udp, NIO_linux_eth, NIO_gen_eth, NIO_tap, NIO_unix, NIO_vde, NIO_null, nosend, setdebug, \
      C2691, C3725, C3745, GT96100_FE, C2600, \
      CISCO2600_MB_1E, CISCO2600_MB_2E, CISCO2600_MB_1FE, CISCO2600_MB_2FE, PA_2FE_TX, \
      PA_GE, PA_C7200_IO_2FE, PA_C7200_IO_GE_E, PA_C7200_JC_PA, C1700, CISCO1710_MB_1FE_1E, C1700_MB_1ETH, \
      DynamipsVerError, DynamipsErrorHandled, NM_CIDS, NM_NAM, get_reverse_udp_nio, Dynamips_device, Emulated_switch
-from qemu_lib import Qemu, QemuDevice, AnyEmuDevice, PIX, ASA, JunOS, IDS, nosend_qemu
+from qemu_lib import Qemu, QemuDevice, AnyEmuDevice, PIX, ASA, AWP, JunOS, IDS, nosend_qemu
 from dynagen_vbox_lib import VBox, VBoxDevice, AnyVBoxEmuDevice, nosend_vbox
 from validate import Validator
 from configobj import ConfigObj, flatten_errors
@@ -61,8 +61,8 @@ def debugmsg(level, message):
         print message
 
 # Constants
-VERSION = '0.13.1.20111031'
-CONFIGSPECPATH = ['/usr/share/dynagen', '/usr/local/share']
+VERSION = '0.13.1.20131002'
+CONFIGSPECPATH = ['/usr/share/dynagen', '/usr/local/share', '/usr/local/share/dynagen']
 CONFIGSPEC = 'configspec'
 INIPATH = ['/etc', '/usr/local/etc']
 INIFILE = 'dynagen.ini'
@@ -75,6 +75,7 @@ MODELTUPLE = (  # A tuple of known model objects
     C3600,
     C7200,
     ASA,
+    AWP,
     PIX,
     JunOS,
     IDS,
@@ -84,6 +85,7 @@ MODELTUPLE = (  # A tuple of known model objects
 DEVICETUPLE = (  # A tuple of known device names
     '525',
     '5520',
+    'Soft32',
     'O-series',
     'IDS-4215',
     'QemuDevice',
@@ -159,8 +161,6 @@ NIOTYPE = ('nio_linux_eth',
            )
 
 # Globals
-notelnet = False  # Flag to disable telnet (for gDynagen)
-telnetstring = ''  # global telnet string value for telneting onto consoles
 interface_re = re.compile(r"""^(g|gi|f|fa|a|at|s|se|e|et|p|po|i|id|IDS-Sensor|an|Analysis-Module)([0-9]+)\/([0-9]+)""", re.IGNORECASE)  # Regex matching intefaces
 interface_noport_re = re.compile(r"""^(g|gi|f|fa|a|at|s|se|e|et|p|po)([0-9]+)""", re.IGNORECASE)  # Regex matching intefaces with out a port (e.g. "f0")
 qemu_int_re = re.compile(r"""^(e|et|eth)([0-9])""", re.IGNORECASE)
@@ -197,7 +197,7 @@ class Dynagen:
         self.globalconfig = {}  # A global copy of the config that console.py can access
         self.global_filename = 'lab.net'
         self.autostart_value = False
-        self.globaludp = 10000  # The default base UDP port for NIO
+        self.globaludp = 10001  # The default base UDP port for NIO
         self.global_qemu_udp = 20000   # The default base UDP port for NIO on Qemuwrapper
         self.global_vbox_udp = 20900   # The default base UDP port for NIO on VBoxwrapper
         self.useridledbfile = ''  # The filespec of the idle database
@@ -206,7 +206,13 @@ class Dynagen:
         self.startdelay = 0     # global delay between router startup
         self.handled = True   # indicates whether and error was handled
 
+        self.telnetstring = ''  # Global telnet string value for telneting onto consoles
+        self.notelnet = False  # Flag to disable telnet (for gDynagen)
+        self.baseconfig = None  # Default base configuration when creating a new IOS based router
         self.import_error = False  #True if errors during import
+        self.baseconfig = None  # Default base configuration when creating a new IOS based router
+        self.starttime = int(time.time()) # Seconds since the epoch when Dynagen start
+        self.multistart = True  # Default behavior with the delay when start multiple devices with multiple hypervisors/wrappers
 
         #confdynagen stuff
         self.running_config = ConfigObj(list_values=False, encoding='utf-8')
@@ -280,10 +286,14 @@ class Dynagen:
                 'serial',
                 'nics',
                 'netcard',
+                'usermod',
+                'flavor',
                 'kvm',
+                'monitor',
                 'options',
                 'initrd',
                 'kernel',
+                'rel',
                 'kernel_cmdline',
                 'image1',
                 'image2',
@@ -375,9 +385,9 @@ class Dynagen:
         if conn_type == 'Manual':
             #manual mapping aplies only to Dynamips based devices
             if isinstance(local_device, AnyEmuDevice):
-                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW to bridge the connection to the NIO instead.'
+                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW or hub to bridge the connection to the NIO instead.'
             if isinstance(local_device, AnyVBoxEmuDevice):
-                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW to bridge the connection to the NIO instead.'
+                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW or hub to bridge the connection to the NIO instead.'
             niotype = x1
             niostring = x2
             # Process the netio
@@ -468,6 +478,8 @@ class Dynagen:
 
                     if device.adapter == 'ETHSW':
                         pa2 = 'f'  # Ethernet switches are FastEthernets (for our purposes anyway)
+                    elif device.adapter == 'Hub':
+                        pa2 = 'f'  # Ethernet hubs are FastEthernets (for our purposes anyway)
                     elif device.adapter == 'FRSW':
                         pa2 = 's'  # Frame Relays switches are Serials
                     elif device.adapter == 'ATMSW':
@@ -504,7 +516,7 @@ class Dynagen:
            right_side: the string to parse
         """
 
-        parameters = len(dest.split(' '))
+        parameters = len(dest.split())
         if parameters == 1:
             #there are no spaces on the right side of connection, probably a NIO f.e. NIO_gen_eth:\Device\NPF_{07FEAF75-631E-4950-A4A2-ED8ECA422DC7}
             if dest[:4].lower() == 'nio_':
@@ -520,7 +532,7 @@ class Dynagen:
                 raise DynamipsError, 'Malformed right side of connection'
         if parameters == 2:
             #either the normal "R0 f0/0", or "LAN 1"
-            (devname, interface) = dest.split(' ')
+            (devname, interface) = dest.split()
 
             #check if this is not a connection to dynamips emulate bridge
             if devname.lower() == 'lan':
@@ -541,7 +553,7 @@ class Dynagen:
             return (remote_device, pa2, slot2, port2, 'AutoUDP')
         if parameters == 3:
             #ETHSW to NIO type of connections f.e "access 1 nio_linux_eth:eth0"
-            (porttype, vlan, nio) = dest.split(' ')
+            (porttype, vlan, nio) = dest.split()
             try:
                 (niotype, niostring) = nio.split(':', 1)
             except ValueError:
@@ -552,7 +564,7 @@ class Dynagen:
             # Should be a porttype, vlan, and a device&port pair specifying the destionation of UDP NIO connection
 
             #handle the daisy connection between the switches
-            (porttype, vlan, devname, interface) = dest.split(' ')
+            (porttype, vlan, devname, interface) = dest.split()
 
             #if this is normal connection to another device
             if devname not in self.devices:
@@ -584,7 +596,7 @@ class Dynagen:
                 try:
                     realPort = local_device.slot[slot1].interfaces[pa1][port1]
                 except AttributeError:
-                    raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW to bridge the connection to the NIO instead.'
+                    raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW or hub to bridge the connection to the NIO instead.'
 
         #parse the right side of connection
         (x1,x2,x3,x4,conn_type) = self._parse_right_side_of_connection(dest)
@@ -593,7 +605,7 @@ class Dynagen:
         if conn_type == 'Manual':
             #manual mapping aplies only to Dynamips based devices
             if isinstance(local_device, AnyEmuDevice) or isinstance(local_device, AnyVBoxEmuDevice):
-                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW to bridge the connection to the NIO instead.'
+                raise DynamipsError, 'Device does not support this type of NIO. Use an ETHSW or hub to bridge the connection to the NIO instead.'
             niotype = x1
             niostring = x2
             # Process the netio
@@ -1025,8 +1037,8 @@ class Dynagen:
         pathname = os.path.dirname(realpath)
         self.debug('pathname -> ' + pathname)
         CONFIGSPECPATH.append(pathname)
-        for dir in CONFIGSPECPATH:
-            configspec = dir + os.sep + CONFIGSPEC
+        for confdir in CONFIGSPECPATH:
+            configspec = confdir + os.sep + CONFIGSPEC
             self.debug('configspec -> ' + configspec)
 
             # Check to see if configuration file exists
@@ -1083,6 +1095,7 @@ class Dynagen:
         connectionlist = []  # A list of router connections
         maplist = []  # A list of Frame Relay and ATM switch mappings
         ethswintlist = []  # A list of Ethernet Switch vlan mappings
+        hubintlist = [] # A list of Ethernet Hub NIO connections
         self.import_error = False
         config = self.open_config(FILENAME)
 
@@ -1102,7 +1115,7 @@ class Dynagen:
             server = config[section]
             if ' ' in server.name:
                 #create Qemu
-                (emulator, host) = server.name.split(' ')
+                (emulator, host) = server.name.split()
                 if emulator == 'qemu':
                     #connect to the Qemu Wrapper
                     try:
@@ -1164,7 +1177,7 @@ class Dynagen:
                     for subsection in server.sections:
                         device = server[subsection]
 
-                        if device.name in ['525', '5520', 'O-series', 'IDS-4215', 'QemuDevice']:
+                        if device.name in ['525', '5520', 'Soft32', 'O-series', 'IDS-4215', 'QemuDevice']:
                             # Populate the appropriate dictionary
                             for scalar in device.scalars:
                                 if device[scalar] != None:
@@ -1173,7 +1186,7 @@ class Dynagen:
 
                         # Create the device
                         try:
-                            (devtype, name) = device.name.split(' ')
+                            (devtype, name) = device.name.split()
                         except ValueError:
                             self.dowarning ('Unable to interpret line: "[[' + device.name + ']]"')
                             self.import_error = True
@@ -1183,6 +1196,8 @@ class Dynagen:
                             dev = PIX(self.dynamips[qemu_name], name=name)
                         elif devtype.lower() == 'asa':
                             dev = ASA(self.dynamips[qemu_name], name=name)
+                        elif devtype.lower() == 'awp':
+                            dev = AWP(self.dynamips[qemu_name], name=name)
                         elif devtype.lower() == 'junos':
                             dev = JunOS(self.dynamips[qemu_name], name=name)
                         elif devtype.lower() == 'ids':
@@ -1201,11 +1216,15 @@ class Dynagen:
                                 'key',
                                 'serial',
                                 'nics',
+                                'usermod',
                                 'netcard',
+                                'flavor',
                                 'kvm',
+                                'monitor',
                                 'options',
                                 'initrd',
                                 'kernel',
+                                'rel',
                                 'kernel_cmdline',
                                 'ram',
                                 'image',
@@ -1226,11 +1245,15 @@ class Dynagen:
                                     'key',
                                     'serial',
                                     'nics',
+                                    'usermod',
                                     'netcard',
+                                    'flavor',
                                     'kvm',
+                                    'monitor',
                                     'options',
                                     'initrd',
                                     'kernel',
+                                    'rel',
                                     'kernel_cmdline',
                                     'ram',
                                     'image',
@@ -1320,7 +1343,7 @@ class Dynagen:
 
                         # Create the device
                         try:
-                            (devtype, name) = device.name.split(' ')
+                            (devtype, name) = device.name.split()
                         except ValueError:
                             self.dowarning ('Unable to interpret line: "[[' + device.name + ']]"')
                             self.import_error = True
@@ -1492,7 +1515,7 @@ class Dynagen:
                     self.debug(device.name)
                     # Create the device
                     try:
-                        (devtype, name) = device.name.split(' ')
+                        (devtype, name) = device.name.split()
                     except ValueError:
                         self.dowarning('Unable to interpret line:    "[[' + device.name + ']]"')
                         self.import_error = True
@@ -1554,6 +1577,8 @@ class Dynagen:
                             dev = ATMSW(self.dynamips[server.name], name=name)
                         elif devtype.lower() == 'ethsw':
                             dev = ETHSW(self.dynamips[server.name], name=name)
+                        elif devtype.lower() == 'hub':
+                            dev = Hub(self.dynamips[server.name], name=name)
                         elif devtype.lower() == 'atmbr':
                             dev = ATMBR(self.dynamips[server.name], name=name)
                         else:
@@ -1596,6 +1621,8 @@ class Dynagen:
                                                     connectionlist.append((dev, subitem, dest_device + ' ' + dest_int ))
                                                 except ValueError:
                                                     self.dowarning('incorrect syntax: %s = %s' % (str(subitem), str(device[subitem])))
+                                            elif isinstance(dev, Hub):
+                                                hubintlist.append((dev, subitem, device[subitem]))
                                             else:
                                                 connectionlist.append((dev, subitem, device[subitem]))
                                         else:
@@ -1615,6 +1642,20 @@ class Dynagen:
                         self.dowarning('received dynamips server error:\n\t%s' % err)
                         self.import_error = True
                         continue
+
+        # Apply the switch configuration we collected earlier
+        for ethswint in ethswintlist:
+            self.debug('ethernet switchport configuring: ' + str(ethswint))
+            (switch, source, dest) = ethswint
+            self.ethsw_map(switch, source, dest)
+
+        for hubint in hubintlist:
+            self.debug('ethernet hubport configuring: ' + str(hubint))
+            (hub, source, dest) = hubint
+            if dest.lower()[:3] == 'nio':
+                self.hub_to_nio(hub, source, dest)
+            else:
+                connectionlist.append(hubint)
 
         # Establish the connections we collected earlier
         for connection in connectionlist:
@@ -1636,12 +1677,6 @@ class Dynagen:
                 self.import_error = True
                 continue
 
-        # Apply the switch configuration we collected earlier
-        for ethswint in ethswintlist:
-            self.debug('ethernet switchport configuring: ' + str(ethswint))
-            (switch, source, dest) = ethswint
-            self.ethsw_map(switch, source, dest)
-
         for mapping in maplist:
             self.debug('mapping: ' + str(mapping))
             (switch, source, dest) = mapping
@@ -1657,14 +1692,13 @@ class Dynagen:
             self.doerror('errors during loading of the topology file, please correct them')
         return (connectionlist, maplist, ethswintlist)
 
-
     def ethsw_map(self, switch, source, dest):
         """ handle the connecton on ethsw switch with .net file syntax source = dest"""
 
-        parameters = len(dest.split(' '))
+        parameters = len(dest.split())
         if parameters == 2:
             # should be a porttype and a vlan
-            (porttype, vlan) = dest.split(' ')
+            (porttype, vlan) = dest.split()
             try:
                 switch.set_port(int(source), porttype, int(vlan))
             except DynamipsError, e:
@@ -1682,7 +1716,7 @@ class Dynagen:
                 return
         elif parameters == 3:
             # Should be a porttype, vlan, and an nio
-            (porttype, vlan, nio) = dest.split(' ')
+            (porttype, vlan, nio) = dest.split()
             try:
                 (niotype, niostring) = nio.split(':', 1)
             except ValueError:
@@ -1731,7 +1765,7 @@ class Dynagen:
             # Should be a porttype, vlan, and a device&port pair specifying the destionation of UDP NIO connection
 
             #handle the daisy connection between the switches
-            (porttype, vlan, remote_device, remote_port) = dest.split(' ')
+            (porttype, vlan, remote_device, remote_port) = dest.split()
             try:
                 result = self.connect(switch, source, remote_device + ' ' + remote_port)
                 if result == False:
@@ -1749,10 +1783,57 @@ class Dynagen:
             self.import_error = True
             return
 
+    def hub_to_nio(self, hub, source, dest):
+        """ handle the connecton on hub to NIOs"""
+
+        try:
+            (niotype, niostring) = dest.split(':', 1)
+        except ValueError:
+            e = 'Malformed NETIO'
+            self.dowarning('Connecting %s port %s to %s resulted in:\n\t%s' % (hub.name, source, dest, e))
+            self.import_error = True
+            return
+        self.debug('A NETIO: ' + str(dest))
+        try:
+            #Process the netio
+            if niotype.lower() == 'nio_linux_eth':
+                self.debug('NIO_linux_eth ' + str(dest))
+                hub.nio(int(source), nio=NIO_linux_eth(hub.dynamips, interface=niostring))
+            elif niotype.lower() == 'nio_gen_eth':
+                self.debug('gen_eth ' + str(dest))
+                hub.nio(int(source), nio=NIO_gen_eth(hub.dynamips, interface=niostring))
+            elif niotype.lower() == 'nio_udp':
+                self.debug('udp ' + str(dest))
+                (udplocal, remotehost, udpremote) = niostring.split(':', 2)
+                hub.nio(int(source), nio=NIO_udp(hub.dynamips, int(udplocal), str(remotehost), int(udpremote)))
+            elif niotype.lower() == 'nio_null':
+                self.debug('nio null')
+                hub.nio(int(source), nio=NIO_null(hub.dynamips, name=niostring))
+            elif niotype.lower() == 'nio_tap':
+                self.debug('nio tap ' + str(dest))
+                hub.nio(int(source), nio=NIO_tap(hub.dynamips, niostring))
+            elif niotype.lower() == 'nio_unix':
+                self.debug('unix ' + str(dest))
+                (unixlocal, unixremote) = niostring.split(':', 1)
+                hub.nio(int(source), nio=NIO_unix(hub.dynamips, unixlocal, unixremote))
+            elif niotype.lower() == 'nio_vde':
+                self.debug('vde ' + str(dest))
+                (controlsock, localsock) = niostring.split(':', 1)
+                hub.nio(int(source), nio=NIO_vde(hub.dynamips, controlsock, localsock))
+            else:
+                # Bad NIO
+                e = 'invalid NIO in Ethernet switchport config'
+                self.dowarning('Connecting %s %s to %s resulted in:\n\t%s' % (hub.name, source, dest, e))
+                self.import_error = True
+                return
+        except DynamipsError, e:
+            self.dowarning('Connecting %s port %s to %s resulted in:\n\t%s' % (hub.name, source, dest, e))
+            self.import_error = True
+            return
+
     def import_ini(self, FILENAME):
         """ Read in the INI file"""
 
-        global telnetstring, startdelay
         # look for the INI file in the same directory as dynagen
         realpath = os.path.realpath(sys.argv[0])
         pathname = os.path.dirname(realpath)
@@ -1782,9 +1863,9 @@ class Dynagen:
             sys.exit(1)
 
         try:
-            telnetstring = config['telnet']
+            self.telnetstring = config['telnet']
         except KeyError:
-            telnetstring = None
+            self.telnetstring = ''
             self.dowarning('No telnet option found in INI file.')
 
         try:
@@ -1802,9 +1883,43 @@ class Dynagen:
 
         # Allow specification of a default delay between router startups
         try:
-            startdelay = config['delay']
+            self.startdelay = config['delay']
         except KeyError:
+            self.startdelay = 0
+
+        try:
+            self.startdelay = int(self.startdelay)
+        except ValueError:
+            self.dowarning('Ignoring invalid delay value in dynagen.ini')
+            self.startdelay = 0
+
+        # Allow specification of a default configuration for IOS routers
+        try:
+            fbasecfg = config['baseconfig']
+        except KeyError:
+            self.baseconfig = None
+        try:
+            hbasecfg = open(fbasecfg, 'r')
+            self.baseconfig = hbasecfg.read()
+            hbasecfg.close()
+        except IOError:
+            self.dowarning('Ignoring invalid or unreadable baseconfig file in dynagen.ini')
+            self.baseconfig = None
+        except UnboundLocalError:
             pass
+ 
+        # Allow specification of the behavior with the delay when start multiple devices
+        try:
+            tmpmulti = config['multistart'].lower()
+            if (tmpmulti in ['on', 'true', '1', 'yes']):
+                self.multistart = True
+            elif (tmpmulti in ['off', 'false', '0', 'no']):
+                self.multistart = False
+            else:
+                self.dowarning('Ignoring invalid multistart value in dynagen.ini')
+                self.multistart = True
+        except KeyError:
+            self.multistart = True
 
     def import_generic_ini(self, inifile):
         """ Import a generic ini file and return it as a dictionary, if it exists
@@ -1840,6 +1955,12 @@ class Dynagen:
                 for router_name in self.configurations:
                     device = self.devices[router_name]
                     device.config_b64 = self.configurations[router_name]
+
+    def push_base_configuration(self):
+        if self.baseconfig != None:
+            for device in self.devices.values():
+                if isinstance(device, Router):
+                    device.config_b64 = self.baseconfig.replace('%h', device.name).encode('base64','strict').replace('\n', '')
 
     def ghosting(self):
         """ Implement IOS Ghosting"""
@@ -2040,7 +2161,7 @@ class Dynagen:
             if isinstance(hypervisor, Qemu):
                 h = 'qemu ' + hypervisor.host + ":" + str(hypervisor.port)
             elif isinstance(hypervisor, VBox):
-	        h = 'vbox ' + hypervisor.host + ":" + str(hypervisor.port)
+                h = 'vbox ' + hypervisor.host + ":" + str(hypervisor.port)
             else:
                 h = hypervisor.host + ":" + str(hypervisor.port)
 
@@ -2055,8 +2176,8 @@ class Dynagen:
                     if isinstance(device, AnyEmuDevice):
                         model = device.model_string
                         self.defaults_config[h][model] = {}
-                        # ASA and IDS have different image settings
-                        if model != '5520' and model != 'IDS-4215':
+                        # ASA, AWP and IDS have different image settings
+                        if model != '5520' and model != 'IDS-4215' and model != 'Soft32':
                             if device.image == None:
                                 self.error('specify at least image file for device ' + device.name)
                                 device.image = '"None"'
@@ -2066,12 +2187,10 @@ class Dynagen:
                             if getattr(device, option) != device.defaults[option]:
                                 self.defaults_config[h][model][option] = getattr(device, option)
                     elif isinstance(device, AnyVBoxEmuDevice):
-		        #continue
-
                         model = device.model_string
                         self.defaults_config[h][model] = {}
-                        # ASA and IDS have different image settings
-                        if model != '5520' and model != 'IDS-4215':
+                        # ASA, AWS and IDS have different image settings
+                        if model != '5520' and model != 'IDS-4215' and model != 'Soft32':
                             if device.image == None:
                                 self.error('specify at least image file for device ' + device.name)
                                 device.image = '"None"'
@@ -2253,7 +2372,7 @@ class Dynagen:
                     self.running_config[h][f][con] = remote_router.name + ' ' + remote_adapter + str(remote_port)
                 elif isinstance(remote_router, Router):
                     self.running_config[h][f][con] = self._translate_interface_connection(remote_adapter, remote_router, remote_port)
-                elif isinstance(remote_router, FRSW) or isinstance(remote_router, ATMSW) or isinstance(remote_router, ATMBR) or isinstance(remote_router, ETHSW):
+                elif isinstance(remote_router, FRSW) or isinstance(remote_router, ATMSW) or isinstance(remote_router, ATMBR) or isinstance(remote_router, ETHSW) or isinstance(remote_router, Hub):
                     self.running_config[h][f][con] = remote_router.name + " " + str(remote_port)
 
     def _translate_interface_connection(self, remote_adapter, remote_router, remote_port):
@@ -2281,7 +2400,6 @@ class Dynagen:
             default_option = device.defaults[option]
         if unicode(getattr(device, option)) != unicode(default_option):
             running[option] = getattr(device, option)
-
 
     def update_running_config(self, need_active_config=False):
         """read all Dynamips_lib objects, create ConfObj object that is representing the config in the same format as input file"""
@@ -2356,6 +2474,7 @@ class Dynagen:
         for hypervisor in self.dynamips.values():
             hypervisor.configchange = False
 
+
     def get_running_config(self, params):
         """return the running_config string"""
 
@@ -2391,6 +2510,9 @@ class Dynagen:
                 elif isinstance(device, ETHSW):
                     device_section = self.running_config[hypervisor_name]['ETHSW ' + device.name]
                     print '\t' + '[[ETHSW ' + device.name + ']]'
+                elif isinstance(device, Hub):
+                    device_section = self.running_config[hypervisor_name]['Hub ' + device.name]
+                    print '\t' + '[[Hub ' + device.name + ']]'
                 elif isinstance(device, ATMSW):
                     device_section = self.running_config[hypervisor_name]['ATMSW ' + device.name]
                     print '\t' + '[[ATMSW ' + device.name + ']]'
@@ -2464,8 +2586,8 @@ class Dynagen:
         linkTransform = {'ETH': 'EN10MB', 'FR': 'FRELAY', 'HDLC': 'C_HDLC', 'PPP': 'PPP_SERIAL'}
 
         try:
-            if len(args.split(" ")) > 3:
-                (device, interface, filename, linktype) = args.split(" ", 3)
+            if len(args.split()) > 3:
+                (device, interface, filename, linktype) = args.split(None, 3)
                 try:
                     linktype = linktype.upper()
                     linktype = linkTransform[linktype]
@@ -2473,7 +2595,7 @@ class Dynagen:
                     print 'Invalid linktype: ' + linktype
                     return
             else:
-                (device, interface, filename) = args.split(" ", 2)
+                (device, interface, filename) = args.split(None, 2)
                 linktype = None
         except ValueError:
             print  'Invalid syntax'
@@ -2534,8 +2656,8 @@ class Dynagen:
             return
 
     def no_capture(self, options):
-        if len(options.split(" ")) == 2:
-            (device, interface) = options.split(" ", 1)
+        if len(options.split()) == 2:
+            (device, interface) = options.split(None, 1)
         else:
             print "Invalid syntax"
 
@@ -2655,10 +2777,12 @@ if __name__ == '__main__':
             nosend(True)
             nosend_qemu(True)
             nosend_vbox(True)
+        notelnet = False
         if options.notelnet:
             notelnet = True
 
         dynagen = Dynagen()
+        dynagen.notelnet = notelnet
 
         # Import INI file
         try:
@@ -2705,6 +2829,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
 
+            dynagen.push_base_configuration()
             dynagen.push_embedded_configurations()
             dynagen.ghosting()
             dynagen.jitsharing()

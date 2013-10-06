@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -26,6 +25,7 @@ import GNS3.Dynagen.dynamips_lib as lib
 import GNS3.Dynagen.dynagen as dynagen_namespace
 import GNS3.Dynagen.qemu_lib as qemu
 import GNS3.Dynagen.dynagen_vbox_lib as vboxlib
+import GNS3.Dynagen.portTracker_lib as tracker
 from PyQt4 import QtCore, QtGui
 from GNS3.Utils import translate, debug
 from GNS3.Node.IOSRouter import IOSRouter
@@ -33,6 +33,7 @@ from GNS3.Node.AnyEmuDevice import AnyEmuDevice, PIX
 from GNS3.Node.AnyVBoxEmuDevice import AnyVBoxEmuDevice
 from GNS3.Node.DecorativeNode import DecorativeNode
 from GNS3.Node.FRSW import FRSW
+from GNS3.Node.Cloud import Cloud
 from PipeCapture import PipeCapture
 from __main__ import GNS3_RUN_PATH
 
@@ -128,7 +129,7 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
         self.length = math.sqrt(self.dx * self.dx + self.dy * self.dy)
 
         # multi-links management
-        if not self.fake and self.multi:
+        if not self.fake and self.multi and self.length:
             angle = math.radians(90)
             self.dxrot = math.cos(angle) * self.dx - math.sin(angle) *  self.dy
             self.dyrot = math.sin(angle) * self.dx + math.cos(angle) * self.dy
@@ -162,7 +163,6 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
         """
 
         self.setToolTip(translate("AbstractEdge", "Link: %s (%s) -> %s (%s)") % (self.source.hostname, self.srcIf, self.dest.hostname, self.destIf))
-
 
     def keyReleaseEvent(self, event):
         """ Key release handler
@@ -285,7 +285,7 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
         globals.GApp.mainWindow.capturesDock.refresh()
 
     def isLocalhost(self, i_host):
-        if i_host == 'localhost' or i_host == '127.0.0.1' or i_host == '::1' or i_host == "0:0:0:0:0:0:0:1":
+        if i_host in tracker.portTracker().local_addresses:
             return True
         else:
             return False
@@ -309,6 +309,20 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
 
         globals.GApp.mainWindow.capturesDock.refresh()
 
+    def __srcIfToPath(self):
+
+        if sys.platform.startswith('win') and isinstance(self.source, Cloud):
+            return self.srcIf.split(':', 1)[0]
+        else:
+            return self.srcIf.replace('/', '')
+
+    def __destIfToPath(self):
+
+        if sys.platform.startswith('win') and isinstance(self.dest, Cloud):
+            return self.destIf.split(':', 1)[0]
+        else:
+            return self.destIf.replace('/', '')
+
     def __captureQemuDevice(self, device, interface):
         """ Capture for Qemu based devices
         """
@@ -323,10 +337,14 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
 
         if capture_conf.workdir and (host == globals.GApp.systconf['qemu'].QemuManager_binding or self.isLocalhost(host)):
             # We only provide capture directory to locally running wrappers.
-            self.capfile = unicode(capture_conf.workdir + os.sep + self.source.hostname + '_to_' + self.dest.hostname + '.cap')
+            if globals.GApp.workspace.saveCaptures and globals.GApp.workspace.projectFile:
+                capture_dir = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'captures'
+                self.capfile = unicode(capture_dir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '_' + time.strftime("%d%m%y_%H%M%S") + '.cap')
+            else:
+                self.capfile = unicode(capture_conf.workdir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
         else:
             # Remote hypervisor should setup it's own work dir, when user is starting wrapper.
-            self.capfile = unicode(self.source.hostname + '_to_' + self.dest.hostname + '.cap')
+            self.capfile = unicode(self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
 
         debug("Start capture to " + self.capfile)
         globals.GApp.dynagen.devices[device].capture(int(port), self.capfile)
@@ -349,10 +367,14 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
 
         if capture_conf.workdir and (host == globals.GApp.systconf['vbox'].VBoxManager_binding or self.isLocalhost(host)):
             # We only provide capture directory to locally running wrappers.
-            self.capfile = unicode(capture_conf.workdir + os.sep + self.source.hostname + '_to_' + self.dest.hostname + '.cap')
+            if globals.GApp.workspace.saveCaptures and globals.GApp.workspace.projectFile:
+                capture_dir = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'captures'
+                self.capfile = unicode(capture_dir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '_' + time.strftime("%d%m%y_%H%M%S") + '.cap')
+            else:
+                self.capfile = unicode(capture_conf.workdir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
         else:
             # Remote hypervisor should setup it's own work dir, when user is starting wrapper.
-            self.capfile = unicode(self.source.hostname + '_to_' + self.dest.hostname + '.cap')
+            self.capfile = unicode(self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
         #"""
         debug("Start capture to " + self.capfile)
 
@@ -360,7 +382,7 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
         self.captureInfo = (device, port)
         self.capturing = True
         debug("Capturing to " + self.capfile)
-
+        
     def __captureDynamipsDevice(self, device, interface, encapsulation):
         """ Capture for Dynamips based devices
         """
@@ -384,11 +406,16 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
             encapsulation = self.encapsulationTransform[encapsulation]
             capture_conf = globals.GApp.systconf['capture']
 
-            if capture_conf.workdir and (host == globals.GApp.systconf['dynamips'].HypervisorManager_binding or host == 'localhost' or host == '127.0.0.1' or host == '::1'):
-                workdir = capture_conf.workdir
+            if capture_conf.workdir and (host == globals.GApp.systconf['dynamips'].HypervisorManager_binding or self.isLocalhost(host)):
+                if globals.GApp.workspace.saveCaptures and globals.GApp.workspace.projectFile:
+                    capture_dir = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'captures'
+                    self.capfile = unicode(capture_dir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '_' + time.strftime("%d%m%y_%H%M%S") + '.cap')
+                else:
+                    self.capfile = unicode(capture_conf.workdir + os.sep + self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
             else:
-                workdir = globals.GApp.dynagen.devices[device].dynamips.workingdir
-            self.capfile = unicode(workdir + os.sep + self.source.hostname + '_to_' + self.dest.hostname + '.cap')
+                # Remote hypervisor should setup it's own work dir, when user is starting wrapper.
+                self.capfile = unicode(self.source.hostname + '_' + self.__srcIfToPath() + '_to_' + self.dest.hostname + '_' + self.__destIfToPath() + '.cap')
+
             debug("Start capture to " + self.capfile)
             globals.GApp.dynagen.devices[device].slot[slot].filter(inttype, port,'capture','both', encapsulation + " " + '"' + self.capfile + '"')
             self.captureInfo = (device, slot, inttype, port, original_encapsulation)
@@ -503,7 +530,7 @@ class AbstractEdge(QtGui.QGraphicsPathItem, QtCore.QObject):
                         print QtGui.QMessageBox.warning(globals.GApp.mainWindow, translate("AbstractEdge", "Capture"), translate("AbstractEdge", "Please close Wireshark"))
                         return
                     self.capturePipeThread = None
-                    pipe = r"\\.\pipe\GNS3\%s_to_%s" % (self.source.hostname, self.dest.hostname)
+                    pipe = r"\\.\pipe\GNS3\%s_%s_to_%s_%s" % (self.source.hostname, self.__srcIfToPath(), self.dest.hostname, self.__destIfToPath())
                     path = path.replace("%p", "%s") % pipe
                     self.capturePipeThread = PipeCapture(self.capfile, path, pipe)
                     self.capturePipeThread.start()

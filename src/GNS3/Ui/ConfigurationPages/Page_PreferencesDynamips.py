@@ -43,9 +43,9 @@ class UiConfig_PreferencesDynamips(QtGui.QWidget, Ui_PreferencesDynamips):
         #self.comboBoxBinding.addItems(['localhost', QtNetwork.QHostInfo.localHostName()] + map(lambda addr: addr.toString(), QtNetwork.QNetworkInterface.allAddresses()))
         mylist = map(lambda addr: addr.toString(), QtNetwork.QNetworkInterface.allAddresses())
         if mylist.__contains__('0:0:0:0:0:0:0:1'):
-            self.comboBoxBinding.addItems(['localhost', '::1', QtNetwork.QHostInfo.localHostName()] + mylist)
+            self.comboBoxBinding.addItems(['localhost', '::1', '0.0.0.0', '::', QtNetwork.QHostInfo.localHostName()] + mylist)
         else:
-            self.comboBoxBinding.addItems(['localhost', QtNetwork.QHostInfo.localHostName()] + mylist)
+            self.comboBoxBinding.addItems(['localhost', '0.0.0.0', QtNetwork.QHostInfo.localHostName()] + mylist)
         self.loadConf()
 
     def loadConf(self):
@@ -160,15 +160,24 @@ class UiConfig_PreferencesDynamips(QtGui.QWidget, Ui_PreferencesDynamips):
                 image_conf = globals.GApp.iosimages[name]
                 if len(image_conf.hypervisors) == 0:
                     del globals.GApp.iosimages[name]
+                    #if binding == '0.0.0.0':
+                    #    binding = '127.0.0.1'
                     globals.GApp.iosimages[binding + ':' + image_conf.filename] = image_conf
 
         globals.GApp.systconf['dynamips'] = self.conf
         ConfDB().sync()
 
+        return True
+
     def __setDynamipsPath(self):
         """ Open a file dialog for choosing the location of dynamips executable
         """
-        fb = fileBrowser(translate('UiConfig_PreferencesDynamips', 'Dynamips binary'), parent=globals.preferencesWindow)
+
+        dynamips_default_directory = '.'
+        if sys.platform.startswith('darwin') and os.path.exists('../Resources/') and hasattr(sys, "frozen"):
+            dynamips_default_directory = '../Resources/'
+
+        fb = fileBrowser(translate('UiConfig_PreferencesDynamips', 'Dynamips binary'), directory=dynamips_default_directory, parent=globals.preferencesWindow)
         (path, selected) = fb.getFile()
 
         if path is not None and path != '':
@@ -190,7 +199,16 @@ class UiConfig_PreferencesDynamips(QtGui.QWidget, Ui_PreferencesDynamips):
         """ Open a file dialog for choosing the location of local hypervisor
         working directory
         """
-        fb = fileBrowser(translate('UiConfig_PreferencesDynamips', 'Local hypervisor working directory'), parent=globals.preferencesWindow)
+
+        dynamips_default_working_directory = '.'
+        if os.environ.has_key("TEMP"):
+            dynamips_default_working_directory = os.environ["TEMP"]
+        elif os.environ.has_key("TMP"):
+            dynamips_default_working_directory = os.environ["TMP"]
+        elif os.path.exists('/tmp'):
+            dynamips_default_working_directory = unicode('/tmp')
+
+        fb = fileBrowser(translate('UiConfig_PreferencesDynamips', 'Local hypervisor working directory'), directory=dynamips_default_working_directory, parent=globals.preferencesWindow)
         path = fb.getDir()
 
         if path:
@@ -218,6 +236,10 @@ class UiConfig_PreferencesDynamips(QtGui.QWidget, Ui_PreferencesDynamips):
             if os.path.exists(globals.GApp.systconf['dynamips'].path) == False:
                 self.labelDynamipsStatus.setText('<font color="red">' + translate("UiConfig_PreferencesDynamips", "Dynamips path doesn't exist")  + '</font>')
                 return
+            
+        if not sys.platform.startswith('win') and not os.access(globals.GApp.systconf['dynamips'].path, os.X_OK):
+            self.labelDynamipsStatus.setText('<font color="red">' + translate("UiConfig_PreferencesDynamips", "Dynamips path isn't marked as executable.<br>Please fix using the following command:<br>chmod +x path_to_dynamips")  + '</font>')
+            return
 
         try:
             p = sub.Popen([globals.GApp.systconf['dynamips'].path, '--help'], stdout=sub.PIPE)

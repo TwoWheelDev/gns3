@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -28,11 +27,13 @@ from GNS3.Dynagen.dynagen import Dynagen, DEVICETUPLE
 from GNS3.Utils import translate, debug, getWindowsInterfaces
 from PyQt4 import QtCore, QtGui, QtNetwork
 
+
 def debugmsg(level, message):
     if debuglevel == 0:
         return
     if debuglevel >= level:
         print message
+
 
 class DynagenSub(Dynagen):
     """ Subclass of Dynagen
@@ -44,14 +45,14 @@ class DynagenSub(Dynagen):
         self.gns3_data = None
         self.rpcap_mapping = {}
         self.local_addresses = map(lambda addr: unicode(addr.toString()), QtNetwork.QNetworkInterface.allAddresses())
-        self.local_addresses += ['0.0.0.0', '127.0.0.1', 'localhost', '::1', '0:0:0:0:0:0:0:1', QtNetwork.QHostInfo.localHostName()]
+        self.local_addresses += ['0.0.0.0', '::', '127.0.0.1', 'localhost', '::1', '0:0:0:0:0:0:0:1', QtNetwork.QHostInfo.localHostName()]
 
     def check_replace_GUID_NIO(self, filename):
         """ Check and replace non-existing GUID (network interface ID) on Windows
         """
         debugmsg(2, "DynagenSub::check_replace_GUID_NIO(%s)" % unicode(filename))
 
-        file = open(filename,'r')
+        file = open(filename, 'r')
         lines = file.readlines()
         cregex = re.compile(r"""^.*nio_gen_eth:(\\device\\npf_{[a-fA-F0-9\-]*}).*""")
         niolist = []
@@ -110,7 +111,7 @@ class DynagenSub(Dynagen):
 
         if len(niolist):
             # write changes
-            file = open(filename,'w')
+            file = open(filename, 'w')
             for line in lines:
                 file.write(line)
             file.close()
@@ -118,7 +119,7 @@ class DynagenSub(Dynagen):
     def getHost(self, i_strAddress):
         # IPv6: gets the "host" portion from "host:port" string
         elements = i_strAddress.split(':')
-        for x in range(len(elements)-1): #Except TCP port
+        for x in range(len(elements) -1) : #Except TCP port
             if x == 0:
                 hostname = elements[x]
             else:
@@ -181,6 +182,10 @@ class DynagenSub(Dynagen):
                     globals.GApp.QemuManager.startQemu(int(controlPort), host)
                     debugmsg(2, "DynagenSub::open_config(), entered QemuManager")
 
+                    # Override qemu & qemu-img paths
+                    server['qemupath'] = globals.GApp.systconf['qemu'].qemu_path
+                    server['qemuimgpath'] = globals.GApp.systconf['qemu'].qemu_img_path
+
                     # Check if this is a relative working directory path and convert to an absolute path if necessary
                     if server['workingdir']:
                         abspath = os.path.join(os.path.dirname(FILENAME), unicode(server['workingdir']))
@@ -190,6 +195,16 @@ class DynagenSub(Dynagen):
 
                     if server['workingdir'] == '.':
                         server['workingdir'] = os.path.dirname(FILENAME)
+
+                    # check if the working directory is accessible, if not find an alternative working directory
+                    if not server.has_key('workingdir') or not server['workingdir'] or not os.access(server['workingdir'], os.F_OK):
+                        if globals.GApp.workspace.projectWorkdir and os.access(globals.GApp.workspace.projectWorkdir, os.F_OK):
+                            workdir = globals.GApp.workspace.projectWorkdir
+                        else:
+                            workdir = globals.GApp.systconf['qemu'].qemuwrapper_workdir
+                        debug(translate("DynagenSub", "Local working directory %s cannot be found for hypervisor %s:%s, use working directory %s instead") \
+                        % (server['workingdir'], host, controlPort, workdir))
+                        server['workingdir'] = workdir
 
                     for subsection in server.sections:
                         device = server[subsection]
@@ -216,6 +231,33 @@ class DynagenSub(Dynagen):
                                                                translate("ASA kernel", "ASA kernel %s cannot be found and cannot find an alternative kernel") % device['kernel'])
                                     continue
                                 print translate("DynagenSub", "Local ASA kernel %s cannot be found, use kernel %s instead") \
+                                                % (unicode(device['kernel']), kernel_name)
+                                device['kernel'] = kernel_name
+                            continue
+
+                        # AWP has no default image
+                        if device.name == 'Soft32' and device['initrd'] and device['kernel']:
+                            debugmsg(2, "DynagenSub::open_config(), entered QemuManager, AWP Soft32")
+                            if not os.access(device['initrd'], os.F_OK):
+
+                                if len(globals.GApp.awprouterimages.keys()):
+                                    initrd_name = globals.GApp.awprouterimages.values()[0].initrd
+                                else:
+                                    QtGui.QMessageBox.critical(globals.GApp.mainWindow, 'DynagenSub',
+                                                               translate("AWP initrd", "AWP initrd %s cannot be found and cannot find an alternative initrd") % device['initrd'])
+                                    continue
+                                print translate("DynagenSub", "Local AWP initrd %s cannot be found, use initrd %s instead") \
+                                                % (unicode(device['initrd']), initrd_name)
+                                device['initrd'] = initrd_name
+
+                            if not os.access(device['kernel'], os.F_OK):
+                                if len(globals.GApp.awprouterimages.keys()):
+                                    kernel_name = globals.GApp.awprouterimages.values()[0].kernel
+                                else:
+                                    QtGui.QMessageBox.critical(globals.GApp.mainWindow, 'DynagenSub',
+                                                               translate("AWP kernel", "AWP kernel %s cannot be found and cannot find an alternative kernel") % device['kernel'])
+                                    continue
+                                print translate("DynagenSub", "Local AWP kernel %s cannot be found, use kernel %s instead") \
                                                 % (unicode(device['kernel']), kernel_name)
                                 device['kernel'] = kernel_name
                             continue
@@ -311,6 +353,16 @@ class DynagenSub(Dynagen):
                     if server['workingdir'] == '.':
                         server['workingdir'] = os.path.dirname(FILENAME)
 
+                    # check if the working directory is accessible, if not find an alternative working directory
+                    if not server.has_key('workingdir') or not server['workingdir'] or not os.access(server['workingdir'], os.F_OK):
+                        if globals.GApp.workspace.projectWorkdir and os.access(globals.GApp.workspace.projectWorkdir, os.F_OK):
+                            workdir = globals.GApp.workspace.projectWorkdir
+                        else:
+                            workdir = globals.GApp.systconf['vbox'].vboxwrapper_workdir
+                        debug(translate("DynagenSub", "Local working directory %s cannot be found for hypervisor %s:%s, use working directory %s instead") \
+                        % (server['workingdir'], host, controlPort, workdir))
+                        server['workingdir'] = workdir
+
                     for subsection in server.sections:
                         device = server[subsection]
                         debugmsg(3, "DynagenSub::open_config(), 'vbox', device...")
@@ -361,15 +413,14 @@ class DynagenSub(Dynagen):
                     if server['workingdir'] == '.':
                         server['workingdir'] = os.path.dirname(FILENAME)
 
-
                     # check if the working directory is accessible, if not find an alternative working directory
                     if not server.has_key('workingdir') or not server['workingdir'] or not os.access(server['workingdir'], os.F_OK):
                         if globals.GApp.workspace.projectWorkdir and os.access(globals.GApp.workspace.projectWorkdir, os.F_OK):
                             workdir = globals.GApp.workspace.projectWorkdir
                         else:
                             workdir = globals.GApp.systconf['dynamips'].workdir
-                        print translate("DynagenSub", "Local working directory %s cannot be found for hypervisor %s:%s, use working directory %s instead") \
-                        % (server['workingdir'], server.host, controlPort, workdir)
+                        debug(translate("DynagenSub", "Local working directory %s cannot be found for hypervisor %s:%s, use working directory %s instead") \
+                        % (server['workingdir'], server.host, controlPort, workdir))
                         server['workingdir'] = workdir
 
                     debugmsg(3, ("DynagenSub::open_config(), server.sections = ", server.sections))
@@ -436,7 +487,7 @@ class DynagenSub(Dynagen):
                             if not os.access(device['cnfg'], os.F_OK):
                                 if globals.GApp.workspace.projectConfigs:
 
-                                    basename =  os.path.basename(device['cnfg'])
+                                    basename = os.path.basename(device['cnfg'])
                                     if sys.platform.startswith('win') and basename == device['cnfg']:
                                         # basename is the same as the original path, maybe it's an unix/posix path
                                         import posixpath
@@ -486,4 +537,4 @@ class DynagenSub(Dynagen):
             self.doreset()
         except:
             print "Reset error, lost communication with hypervisor?"
-        raise
+        #raise

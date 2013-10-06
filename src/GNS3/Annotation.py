@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -23,6 +22,7 @@ from PyQt4 import QtGui, QtCore
 import GNS3.Globals as globals
 import GNS3.UndoFramework as undo
 
+
 class Annotation(QtGui.QGraphicsTextItem):
     """ Text annotation for the topology
     """
@@ -41,6 +41,7 @@ class Annotation(QtGui.QGraphicsTextItem):
         self.prevText = None
 
     def keyPressEvent(self, event):
+
 
         key = event.key()
         modifiers = event.modifiers()
@@ -114,10 +115,9 @@ class Annotation(QtGui.QGraphicsTextItem):
 
         painter.setBrush(QtCore.Qt.red)
         painter.setPen(QtCore.Qt.red)
-        painter.drawRect((brect.width() / 2.0) - 10, (brect.height() / 2.0) - 10, 20,20)
+        painter.drawRect((brect.width() / 2.0) - 10, (brect.height() / 2.0) - 10, 20, 20)
 
         painter.setPen(QtCore.Qt.black)
         painter.setFont(QtGui.QFont("TypeWriter", 14, QtGui.QFont.Bold))
         zval = str(int(self.zValue()))
         painter.drawText(QtCore.QPointF(center.x() - 4, center.y() + 4), zval)
-

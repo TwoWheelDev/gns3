@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -26,11 +25,11 @@ import GNS3.Config.Defaults as Defaults
 import GNS3.Dynagen.dynamips_lib as lib
 import GNS3.Dynagen.portTracker_lib as tracker
 from distutils.version import LooseVersion
-from PyQt4.QtGui import QApplication, QSplashScreen, QPixmap, QMessageBox
+from PyQt4.QtGui import QApplication, QSplashScreen, QPixmap, QMessageBox, QStyleFactory
 from PyQt4.QtCore import Qt, QVariant, QSettings, QEventLoop
 from GNS3.Utils import Singleton, translate
 from GNS3.Workspace import Workspace
-from GNS3.Config.Objects import systemDynamipsConf, systemGeneralConf, systemCaptureConf, systemQemuConf, systemVBoxConf
+from GNS3.Config.Objects import systemDynamipsConf, systemGeneralConf, systemCaptureConf, systemQemuConf, systemVBoxConf, systemDeployementWizardConf
 from GNS3.Globals.Symbols import SYMBOLS, SYMBOL_TYPES
 from GNS3.Config.Config import ConfDB, GNS_Conf
 from GNS3.HypervisorManager import HypervisorManager
@@ -41,6 +40,7 @@ from GNS3.DynagenSub import DynagenSub
 from GNS3.ProjectDialog import ProjectDialog
 from GNS3.Wizard import Wizard
 from __main__ import VERSION
+
 
 class Application(QApplication, Singleton):
     """ GNS3 Application instance
@@ -75,6 +75,7 @@ class Application(QApplication, Singleton):
         self.__piximages = {}
         self.__junosimages = {}
         self.__asaimages = {}
+        self.__awprouterimages = {}
         self.__idsimages = {}
         self.__recentfiles = []
         self.iosimages_ids = 0
@@ -84,6 +85,7 @@ class Application(QApplication, Singleton):
         self.piximages_ids = 0
         self.junosimages_ids = 0
         self.asaimages_ids = 0
+        self.awprouterimages_ids = 0
         self.idsimages_ids = 0
 
         # set global app to ourself
@@ -98,6 +100,8 @@ class Application(QApplication, Singleton):
                               QSettings.UserScope,
                               os.path.expanduser(Defaults.UsrConfigDir))
 
+        #self.setStyle(QStyleFactory.create("cleanlooks"))
+
     def __setMainWindow(self, mw):
         """ register the MainWindow instance
         """
@@ -109,7 +113,7 @@ class Application(QApplication, Singleton):
 
         return self.__mainWindow
 
-    mainWindow = property(__getMainWindow, __setMainWindow, doc = 'MainWindow instance')
+    mainWindow = property(__getMainWindow, __setMainWindow, doc='MainWindow instance')
 
     def __setWorkspace(self, wkspc):
         """ register the Workspace instance
@@ -123,7 +127,7 @@ class Application(QApplication, Singleton):
 
         return self.__workspace
 
-    workspace = property(__getWorkspace, __setWorkspace, doc = 'Workspace instance')
+    workspace = property(__getWorkspace, __setWorkspace, doc='Workspace instance')
 
     def __setScene(self, scene):
         """ register the Scene instance
@@ -137,7 +141,7 @@ class Application(QApplication, Singleton):
 
         return self.__scene
 
-    scene = property(__getScene, __setScene, doc = 'Scene instance')
+    scene = property(__getScene, __setScene, doc='Scene instance')
 
     def __setTopology(self, topology):
         """ register the Topology instance
@@ -151,7 +155,7 @@ class Application(QApplication, Singleton):
 
         return self.__topology
 
-    topology = property(__getTopology, __setTopology, doc = 'Topology instance')
+    topology = property(__getTopology, __setTopology, doc='Topology instance')
 
     def __setSystConf(self, systconf):
         """ register the systconf instance
@@ -165,7 +169,7 @@ class Application(QApplication, Singleton):
 
         return self.__systconf
 
-    systconf = property(__getSystConf, __setSystConf, doc = 'System config instance')
+    systconf = property(__getSystConf, __setSystConf, doc='System config instance')
 
     def __setIOSImages(self, iosimages):
         """ register the sysconf instance
@@ -179,7 +183,7 @@ class Application(QApplication, Singleton):
 
         return self.__iosimages
 
-    iosimages = property(__getIOSImages, __setIOSImages, doc = 'IOS images dictionnary')
+    iosimages = property(__getIOSImages, __setIOSImages, doc='IOS images dictionnary')
 
     def __setQemuImages(self, qemuimages):
         """ register the sysconf instance
@@ -193,7 +197,7 @@ class Application(QApplication, Singleton):
 
         return self.__qemuimages
 
-    qemuimages = property(__getQemuImages, __setQemuImages, doc = 'Qemu images dictionnary')
+    qemuimages = property(__getQemuImages, __setQemuImages, doc='Qemu images dictionnary')
 
     def __setVBoxImages(self, vboximages):
         """ register the sysconf instance
@@ -207,7 +211,7 @@ class Application(QApplication, Singleton):
 
         return self.__vboximages
 
-    vboximages = property(__getVBoxImages, __setVBoxImages, doc = 'VBox images dictionnary')
+    vboximages = property(__getVBoxImages, __setVBoxImages, doc='VBox images dictionnary')
 
     def __setPIXImages(self, piximages):
         """ register the sysconf instance
@@ -221,7 +225,7 @@ class Application(QApplication, Singleton):
 
         return self.__piximages
 
-    piximages = property(__getPIXImages, __setPIXImages, doc = 'PIX images dictionnary')
+    piximages = property(__getPIXImages, __setPIXImages, doc='PIX images dictionnary')
 
     def __setJunOSImages(self, junosimages):
         """ register the sysconf instance
@@ -235,7 +239,7 @@ class Application(QApplication, Singleton):
 
         return self.__junosimages
 
-    junosimages = property(__getJunOSImages, __setJunOSImages, doc = 'JunOS images dictionnary')
+    junosimages = property(__getJunOSImages, __setJunOSImages, doc='JunOS images dictionnary')
 
     def __setASAImages(self, asaimages):
         """ register the sysconf instance
@@ -249,7 +253,21 @@ class Application(QApplication, Singleton):
 
         return self.__asaimages
 
-    asaimages = property(__getASAImages, __setASAImages, doc = 'ASA images dictionnary')
+    asaimages = property(__getASAImages, __setASAImages, doc='ASA images dictionnary')
+
+    def __setAWPImages(self, awprouterimages):
+        """ register the sysconf instance
+        """
+
+        self.__awprouterimages = awprouterimages
+
+    def __getAWPImages(self):
+        """ return the sysconf instance
+        """
+
+        return self.__awprouterimages
+
+    awprouterimages = property(__getAWPImages, __setAWPImages, doc='AWP images dictionary')
 
     def __setIDSImages(self, idsimages):
         """ register the sysconf instance
@@ -263,7 +281,7 @@ class Application(QApplication, Singleton):
 
         return self.__idsimages
 
-    idsimages = property(__getIDSImages, __setIDSImages, doc = 'IDS images dictionnary')
+    idsimages = property(__getIDSImages, __setIDSImages, doc='IDS images dictionnary')
 
     def __setLibraries(self, libraries):
         """ register the sysconf instance
@@ -277,7 +295,7 @@ class Application(QApplication, Singleton):
 
         return self.__libraries
 
-    libraries = property(__getLibraries, __setLibraries, doc = 'Libraries dictionnary')
+    libraries = property(__getLibraries, __setLibraries, doc='Libraries dictionnary')
 
     def __setRecentFiles(self, recentfiles):
         """ register the sysconf instance
@@ -291,8 +309,7 @@ class Application(QApplication, Singleton):
 
         return self.__recentfiles
 
-    recentfiles = property(__getRecentFiles, __setRecentFiles, doc = 'Recent files array')
-
+    recentfiles = property(__getRecentFiles, __setRecentFiles, doc='Recent files array')
 
     def __setHypervisors(self, hypervisors):
         """ register the sysconf instance
@@ -306,7 +323,7 @@ class Application(QApplication, Singleton):
 
         return self.__hypervisors
 
-    hypervisors = property(__getHypervisors, __setHypervisors, doc = 'Hypervisors dictionnary')
+    hypervisors = property(__getHypervisors, __setHypervisors, doc='Hypervisors dictionnary')
 
     def __setDynagen(self, dynagen):
         """ register the dynagen instance
@@ -320,7 +337,7 @@ class Application(QApplication, Singleton):
 
         return self.__dynagen
 
-    dynagen = property(__getDynagen, __setDynagen, doc = 'Dynagen instance')
+    dynagen = property(__getDynagen, __setDynagen, doc='Dynagen instance')
 
     def __setHypervisorManager(self, HypervisorManager):
         """ register the HypervisorManager instance
@@ -334,7 +351,7 @@ class Application(QApplication, Singleton):
 
         return self.__HypervisorManager
 
-    HypervisorManager = property(__getHypervisorManager, __setHypervisorManager, doc = 'HypervisorManager instance')
+    HypervisorManager = property(__getHypervisorManager, __setHypervisorManager, doc='HypervisorManager instance')
 
     def __setQemuManager(self, QemuManager):
         """ register the QemuManager instance
@@ -348,7 +365,7 @@ class Application(QApplication, Singleton):
 
         return self.__QemuManager
 
-    QemuManager = property(__getQemuManager, __setQemuManager, doc = 'QemuManager instance')
+    QemuManager = property(__getQemuManager, __setQemuManager, doc='QemuManager instance')
 
     def __setVBoxManager(self, VBoxManager):
         """ register the VBoxManager instance
@@ -362,12 +379,11 @@ class Application(QApplication, Singleton):
 
         return self.__VBoxManager
 
-    VBoxManager = property(__getVBoxManager, __setVBoxManager, doc = 'VBoxManager instance')
-
+    VBoxManager = property(__getVBoxManager, __setVBoxManager, doc='VBoxManager instance')
 
     def processSplashScreen(self):
         """ Processes the splash screen, Prints a loading picture before entering the application
-		"""
+        """
 
         self.splashMessage = translate("Application", "Starting Graphical Network Simulator...")
         self.splashSleepTime = 1
@@ -384,6 +400,16 @@ class Application(QApplication, Singleton):
         self.splash.finish(self.__mainWindow)
         return
 
+    def showTipsDialog(self):
+
+        self.mainWindow.tips_dialog.setModal(True)
+        self.mainWindow.tips_dialog.show()
+        self.mainWindow.tips_dialog.loadWebPage()
+        self.mainWindow.tips_dialog.raise_()
+        self.mainWindow.tips_dialog.activateWindow()
+        self.mainWindow.raise_()
+        self.mainWindow.tips_dialog.raise_()
+
     def run(self, file):
 
         # Display splash screen while waiting for the application to open
@@ -396,8 +422,8 @@ class Application(QApplication, Singleton):
         confo = self.systconf['dynamips']
         confo.path = ConfDB().get('Dynamips/hypervisor_path', Defaults.DYNAMIPS_DEFAULT_PATH)
         confo.port = int(ConfDB().get('Dynamips/hypervisor_port', 7200))
-        confo.baseUDP = int(ConfDB().get('Dynamips/hypervisor_baseUDP', 10000))
-        confo.baseConsole = int(ConfDB().get('Dynamips/hypervisor_baseConsole', 2001))
+        confo.baseUDP = int(ConfDB().get('Dynamips/hypervisor_baseUDP', 10001))
+        confo.baseConsole = int(ConfDB().get('Dynamips/hypervisor_baseConsole', 2101))
         confo.baseAUX = int(ConfDB().get('Dynamips/hypervisor_baseAUX', 2501))
         confo.workdir = ConfDB().get('Dynamips/hypervisor_working_directory', Defaults.DYNAMIPS_DEFAULT_WORKDIR)
         confo.clean_workdir = ConfDB().value("Dynamips/clean_working_directory", QVariant(True)).toBool()
@@ -426,7 +452,7 @@ class Application(QApplication, Singleton):
         confo.qemuwrapper_workdir = ConfDB().get('Qemu/qemuwrapper_working_directory', Defaults.QEMUWRAPPER_DEFAULT_WORKDIR)
         confo.qemu_path = ConfDB().get('Qemu/qemu_path', Defaults.QEMU_DEFAULT_PATH)
         confo.qemu_img_path = ConfDB().get('Qemu/qemu_img_path', Defaults.QEMU_IMG_DEFAULT_PATH)
-        confo.external_hosts = ConfDB().get('Qemu/external_hosts', unicode('localhost:10525')).split(',')
+        confo.external_hosts = ConfDB().get('Qemu/external_hosts', unicode('127.0.0.1:10525')).split(',')
         confo.enable_QemuWrapperAdvOptions = ConfDB().value("Qemu/enable_QemuWrapperAdvOptions", QVariant(False)).toBool()
         confo.enable_QemuManager = ConfDB().value("Qemu/enable_QemuManager", QVariant(True)).toBool()
         confo.import_use_QemuManager = ConfDB().value("Qemu/qemu_manager_import", QVariant(True)).toBool()
@@ -445,7 +471,7 @@ class Application(QApplication, Singleton):
         confo = self.systconf['vbox']
         confo.vboxwrapper_path = ConfDB().get('VBox/vboxwrapper_path', Defaults.VBOXWRAPPER_DEFAULT_PATH)
         confo.vboxwrapper_workdir = ConfDB().get('VBox/vboxwrapper_working_directory', Defaults.VBOXWRAPPER_DEFAULT_WORKDIR)
-        confo.external_hosts = ConfDB().get('VBox/external_hosts', unicode('localhost:11525')).split(',')
+        confo.external_hosts = ConfDB().get('VBox/external_hosts', unicode('127.0.0.1:11525')).split(',')
         confo.use_VBoxVmnames = ConfDB().value("VBox/use_VBoxVmnames", QVariant(True)).toBool()
         confo.enable_VBoxWrapperAdvOptions = ConfDB().value("VBox/enable_VBoxWrapperAdvOptions", QVariant(False)).toBool()
         confo.enable_VBoxAdvOptions = ConfDB().value("VBox/enable_VBoxAdvOptions", QVariant(False)).toBool()
@@ -472,6 +498,16 @@ class Application(QApplication, Singleton):
         confo.cap_cmd = os.path.expandvars(os.path.expanduser(confo.cap_cmd))
         confo.workdir = os.path.expandvars(os.path.expanduser(confo.workdir))
 
+        # Deployement Wizard config
+        self.systconf['deployement wizard'] = systemDeployementWizardConf()
+        confo = self.systconf['deployement wizard']
+        confo.deployementwizard_path = ConfDB().get('DeployementWizard/deployementwizard_path', Defaults.DEPLOYEMENTWIZARD_DEFAULT_PATH)
+        confo.deployementwizard_filename = ConfDB().get('DeployementWizard/deployementwizard_filename', unicode('Topology.pdf'))
+
+        # Expand user home dir and environement variable
+        confo.deployementwizard_path = os.path.expandvars(os.path.expanduser(confo.deployementwizard_path))
+        confo.deployementwizard_filename = os.path.expandvars(os.path.expanduser(confo.deployementwizard_filename))
+
         # System general config
         self.systconf['general'] = systemGeneralConf()
         confo = self.systconf['general']
@@ -480,6 +516,7 @@ class Application(QApplication, Singleton):
         confo.autosave = int(ConfDB().get('GNS3/autosave', 0))
         confo.project_startup = ConfDB().value("GNS3/project_startup", QVariant(True)).toBool()
         confo.relative_paths = ConfDB().value("GNS3/relative_paths", QVariant(True)).toBool()
+        confo.auto_screenshot = ConfDB().value("GNS3/auto_screenshot", QVariant(True)).toBool()
         if sys.platform.startswith('win'):
             confo.use_shell = ConfDB().value("GNS3/use_shell", QVariant(False)).toBool()
         else:
@@ -487,15 +524,15 @@ class Application(QApplication, Singleton):
         confo.bring_console_to_front = ConfDB().value("GNS3/bring_console_to_front", QVariant(False)).toBool()
         confo.term_cmd = ConfDB().get('GNS3/console', Defaults.TERMINAL_DEFAULT_CMD)
         confo.term_serial_cmd = ConfDB().get('GNS3/serial_console', Defaults.TERMINAL_SERIAL_DEFAULT_CMD)
-        confo.term_close_on_delete = ConfDB().value("GNS3/term_close_on_delete", QVariant(False)).toBool()
+        confo.term_close_on_delete = ConfDB().value("GNS3/term_close_on_delete", QVariant(True)).toBool()
         confo.project_path = ConfDB().get('GNS3/project_directory', Defaults.PROJECT_DEFAULT_DIR)
         confo.ios_path = ConfDB().get('GNS3/ios_directory', Defaults.IOS_DEFAULT_DIR)
         confo.status_points = ConfDB().value("GNS3/gui_show_status_points", QVariant(True)).toBool()
-        confo.manual_connection =ConfDB().value("GNS3/gui_use_manual_connection", QVariant(False)).toBool()
+        confo.manual_connection = ConfDB().value("GNS3/gui_use_manual_connection", QVariant(True)).toBool()
         confo.draw_selected_rectangle = ConfDB().value("GNS3/gui_draw_selected_rectangle", QVariant(False)).toBool()
         confo.scene_width = int(ConfDB().get('GNS3/scene_width', 2000))
         confo.scene_height = int(ConfDB().get('GNS3/scene_height', 1000))
-        confo.console_delay = float(ConfDB().get('GNS3/console_delay', 0.5))
+        confo.console_delay = float(ConfDB().get('GNS3/console_delay', 1))
         if sys.platform.startswith('win') or sys.platform.startswith('darwin'):
             # by default auto check for update only on Windows or OSX
             confo.auto_check_for_update = ConfDB().value("GNS3/auto_check_for_update", QVariant(True)).toBool()
@@ -535,6 +572,7 @@ class Application(QApplication, Singleton):
         GNS_Conf().PIX_images()
         GNS_Conf().JUNOS_images()
         GNS_Conf().ASA_images()
+        GNS_Conf().AWP_images()
         GNS_Conf().IDS_images()
         GNS_Conf().Libraries()
         GNS_Conf().Symbols()
@@ -556,6 +594,13 @@ class Application(QApplication, Singleton):
         # Restore the geometry & state of the GUI
         self.mainWindow.restoreGeometry(ConfDB().value("GUIState/Geometry").toByteArray())
         self.mainWindow.restoreState(ConfDB().value("GUIState/State").toByteArray())
+        self.mainWindow.action_DisableMouseWheel.setChecked(ConfDB().value("GUIState/DisableMouseWheel", QVariant(False)).toBool())
+        self.mainWindow.action_ZoomUsingMouseWheel.setChecked(ConfDB().value("GUIState/ZoomUsingMouseWheel", QVariant(False)).toBool())
+        if self.mainWindow.tips_dialog:
+            self.mainWindow.tips_dialog.checkBoxDontShowAgain.setChecked(ConfDB().value("GUIState/DoNotShowTipsDialog", QVariant(False)).toBool())
+
+        # By default, don't show the NodeTypes dock
+        self.mainWindow.dockWidget_NodeTypes.setVisible(False)
         self.mainWindow.show()
 
         force_clear_configuration = True
@@ -563,11 +608,14 @@ class Application(QApplication, Singleton):
         try:
             # trick to test old version format (integer), before 0.8.2.1 release
             int(version)
-        except:
+        except ValueError:
             force_clear_configuration = False
-            # for future releases
-            #if LooseVersion(VERSION) > version:
-            #    pass
+
+        #for future releases
+        if LooseVersion(VERSION) > str(version):
+            # reset the tips dialog
+            if self.mainWindow.tips_dialog:
+                self.mainWindow.tips_dialog.checkBoxDontShowAgain.setChecked(False)
 
         if force_clear_configuration:
             self.mainWindow.raise_()
@@ -596,14 +644,20 @@ class Application(QApplication, Singleton):
                     self.mainWindow.load_netfile(file)
                 elif confo.project_startup and os.access(configFile, os.F_OK):
                     dialog = ProjectDialog(parent=self.mainWindow, newProject=True)
+                    dialog.setModal(True)
                     dialog.show()
                     self.mainWindow.centerDialog(dialog)
                     dialog.raise_()
                     dialog.activateWindow()
                     self.mainWindow.raise_()
                     dialog.raise_()
+                    if self.mainWindow.tips_dialog and self.mainWindow.tips_dialog.checkBoxDontShowAgain.isChecked() == False:
+                        self.showTipsDialog()
                 else:
+                    self.mainWindow.createProject((None, None, None, False, False))
                     self.mainWindow.raise_()
+                    if self.mainWindow.tips_dialog and self.mainWindow.tips_dialog.checkBoxDontShowAgain.isChecked() == False:
+                        self.showTipsDialog()
 
         retcode = QApplication.exec_()
 
@@ -615,6 +669,10 @@ class Application(QApplication, Singleton):
             # Save the geometry & state of the GUI
             ConfDB().set("GUIState/Geometry", self.mainWindow.saveGeometry())
             ConfDB().set("GUIState/State", self.mainWindow.saveState())
+            ConfDB().set("GUIState/DisableMouseWheel", self.mainWindow.action_DisableMouseWheel.isChecked())
+            ConfDB().set("GUIState/ZoomUsingMouseWheel", self.mainWindow.action_ZoomUsingMouseWheel.isChecked())
+            if self.mainWindow.tips_dialog:
+                ConfDB().set("GUIState/DoNotShowTipsDialog", self.mainWindow.tips_dialog.checkBoxDontShowAgain.isChecked())
             self.syncConf()
 
         sys.exit(retcode)
@@ -631,6 +689,7 @@ class Application(QApplication, Singleton):
         c.set('GNS3/lang', confo.lang)
         c.set('GNS3/project_startup', confo.project_startup)
         c.set('GNS3/relative_paths', confo.relative_paths)
+        c.set('GNS3/auto_screenshot', confo.auto_screenshot)
         c.set('GNS3/slow_start', confo.slow_start)
         c.set('GNS3/autosave', confo.autosave)
         c.set('GNS3/console', confo.term_cmd)
@@ -739,6 +798,10 @@ class Application(QApplication, Singleton):
         c.remove("")
         c.endGroup()
 
+        c.beginGroup("AWP.images")
+        c.remove("")
+        c.endGroup()
+
         c.beginGroup("IDS.images")
         c.remove("")
         c.endGroup()
@@ -771,6 +834,8 @@ class Application(QApplication, Singleton):
             c.set(basekey + "/hypervisors", hypervisors.strip())
             c.set(basekey + "/default_ram", o.default_ram)
             c.set(basekey + "/idlepc", o.idlepc)
+            c.set(basekey + "/idlemax", o.idlemax)
+            c.set(basekey + "/idlesleep", o.idlesleep)
             c.set(basekey + "/default",  o.default)
 
         # Hypervisors
@@ -790,9 +855,12 @@ class Application(QApplication, Singleton):
             c.set(basekey + "/filename", o.filename)
             c.set(basekey + "/memory", o.memory)
             c.set(basekey + "/nic_nb", o.nic_nb)
+            c.set(basekey + "/usermod", o.usermod)
             c.set(basekey + "/nic", o.nic)
+            c.set(basekey + "/flavor", o.flavor)
             c.set(basekey + "/options", o.options)
             c.set(basekey + "/kvm", o.kvm)
+            c.set(basekey + "/monitor", o.monitor)
 
         # VBox images
         for (key, o) in self.__vboximages.iteritems():
@@ -827,13 +895,30 @@ class Application(QApplication, Singleton):
             c.set(basekey + "/filename", o.filename)
             c.set(basekey + "/memory", o.memory)
             c.set(basekey + "/nic_nb", o.nic_nb)
+            c.set(basekey + "/usermod", o.usermod)
             c.set(basekey + "/nic", o.nic)
             c.set(basekey + "/options", o.options)
             c.set(basekey + "/kvm", o.kvm)
+            c.set(basekey + "/monitor", o.monitor)
 
         # ASA images
         for (key, o) in self.__asaimages.iteritems():
             basekey = "ASA.images/" + str(o.id)
+            c.set(basekey + "/name", o.name)
+            c.set(basekey + "/memory", o.memory)
+            c.set(basekey + "/nic_nb", o.nic_nb)
+            c.set(basekey + "/usermod", o.usermod)
+            c.set(basekey + "/nic", o.nic)
+            c.set(basekey + "/options", o.options)
+            c.set(basekey + "/kvm", o.kvm)
+            c.set(basekey + "/monitor", o.monitor)
+            c.set(basekey + "/initrd", o.initrd)
+            c.set(basekey + "/kernel", o.kernel)
+            c.set(basekey + "/kernel_cmdline", o.kernel_cmdline)
+
+        # AWP images
+        for (key, o) in self.__awprouterimages.iteritems():
+            basekey = "AWP.images/" + str(o.id)
             c.set(basekey + "/name", o.name)
             c.set(basekey + "/memory", o.memory)
             c.set(basekey + "/nic_nb", o.nic_nb)
@@ -842,6 +927,7 @@ class Application(QApplication, Singleton):
             c.set(basekey + "/kvm", o.kvm)
             c.set(basekey + "/initrd", o.initrd)
             c.set(basekey + "/kernel", o.kernel)
+            c.set(basekey + "/rel", o.rel)
             c.set(basekey + "/kernel_cmdline", o.kernel_cmdline)
 
         # IDS images
@@ -852,9 +938,11 @@ class Application(QApplication, Singleton):
             c.set(basekey + "/image2", o.image2)
             c.set(basekey + "/memory", o.memory)
             c.set(basekey + "/nic_nb", o.nic_nb)
+            c.set(basekey + "/usermod", o.usermod)
             c.set(basekey + "/nic", o.nic)
             c.set(basekey + "/options", o.options)
             c.set(basekey + "/kvm", o.kvm)
+            c.set(basekey + "/monitor", o.monitor)
 
         # Libraries
         id = 0

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -77,7 +76,7 @@ class ETHSW(AbstractNode):
                 if self.ethsw in self.hypervisor.devices:
                     self.hypervisor.devices.remove(self.ethsw)
                 self.dynagen.update_running_config()
-            except:
+            except lib.DynamipsErrorHandled:
                 pass
             self.ethsw = None
 
@@ -94,7 +93,10 @@ class ETHSW(AbstractNode):
         """
 
         if self.ethsw:
-            self.setToolTip(self.ethsw.info())
+            try:
+                self.setToolTip(self.ethsw.info())
+            except:
+                AbstractNode.setCustomToolTip(self)
         else:
             AbstractNode.setCustomToolTip(self)
 

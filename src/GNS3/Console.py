@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -33,6 +32,7 @@ from GNS3.Node.IOSRouter import IOSRouter
 from GNS3.Node.AnyEmuDevice import AnyEmuDevice
 from GNS3.Node.AnyVBoxEmuDevice import AnyVBoxEmuDevice
 
+
 class Console(PyCutExt, Dynagen_Console):
 
     # list of keywords to color
@@ -59,6 +59,7 @@ class Console(PyCutExt, Dynagen_Console):
                     "suspend",
                     "telnet",
                     "vboxexec",
+                    "qmonitor",
                     "ver"])
 
     def __init__(self, parent):
@@ -72,7 +73,7 @@ class Console(PyCutExt, Dynagen_Console):
         sys.ps1 = '=> '
 
         # Set introduction message
-        self.intro = "GNS3 management console. Running on GNS3 version %s\nCopyright (c) 2006-2012 GNS3 Project" % VERSION
+        self.intro = "GNS3 management console. Running GNS3 version %s.\nCopyright (c) 2006-2013 GNS3 Project." % VERSION
 
         # Parent class initialisation
         try:
@@ -80,7 +81,7 @@ class Console(PyCutExt, Dynagen_Console):
             # put our own keywords list
             self.colorizer.keywords = self.keywords
             self._Dynagen_Console_init()
-        except Exception,e:
+        except Exception, e:
             sys.stderr.write(e.message)
 
     def _Dynagen_Console_init(self):
@@ -152,7 +153,7 @@ class Console(PyCutExt, Dynagen_Console):
             source = '\n'.join(self.lines)
             # Exec!
             self.more = self.onecmd(source)
-        except Exception,e:
+        except Exception, e:
             print e
 
         self.write(self.prompt)
@@ -167,7 +168,7 @@ class Console(PyCutExt, Dynagen_Console):
         from __main__ import VERSION, GNS3_RUN_PATH
 
         bitness = struct.calcsize("P") * 8
-        pythonver = str(sys.version_info[0])+'.'+str(sys.version_info[1])+'.'+str(sys.version_info[2])
+        pythonver = str(sys.version_info[0]) + '.' +str(sys.version_info[1])+'.'+str(sys.version_info[2])
         if hasattr(sys, "frozen"):
             print 'GNS3 version is ' + VERSION + " (compiled)"
         else:
@@ -181,7 +182,7 @@ class Console(PyCutExt, Dynagen_Console):
 
         try:
             Dynagen_Console.do_ver(self, args)
-        except Exception,e:
+        except Exception, e:
             print e
 
     def do_start(self, args):
@@ -287,6 +288,22 @@ Example for Linux guest:
         except (lib.DynamipsErrorHandled,  socket.error):
             QtGui.QMessageBox.critical(self, translate("Console", "%s: Dynamips error") % node.hostname, translate("Console", "Connection lost"))
 
+    def do_qmonitor(self, args):
+        """qmonitor <QEMU device> <command>\nCommunicate with qemu monitor mode.\nDisplay available commands: qmonitor <QEMU device> help"""
+
+        if '?' in args or args.strip() == '':
+            print self.do_qmonitor.__doc__
+            return
+
+        try:
+            Dynagen_Console.do_qmonitor(self, args)
+        except lib.DynamipsError, msg:
+            QtGui.QMessageBox.critical(self, translate("Console", "Dynamips error"),  unicode(msg))
+        except lib.DynamipsWarning,  msg:
+            QtGui.QMessageBox.warning(self,  translate("Console", "Dynamips warning"),  unicode(msg))
+        except (lib.DynamipsErrorHandled,  socket.error):
+            QtGui.QMessageBox.critical(self, translate("Console", "Dynamips error"), translate("Console", "Connection lost"))
+
     def do_show(self, args):
         """show mac <ethernet_switch_name>
 \tshow the mac address table of an ethernet switch
@@ -304,6 +321,8 @@ show hypervisors
 \tshow allocated memory for hypervisors by Hypervisor Manager
 show ports
 \tshow all TCP ports allocated by GNS3
+show project_info
+\tshow the current project path
         """
 
         if '?' in args or args.strip() == '':
@@ -319,6 +338,37 @@ show ports
             track = tracker.portTracker()
             track.showTcpPortAllocation()
             return
+        elif command == 'project_info':
+            print
+            print "Project File:\t\t\t" + globals.GApp.mainWindow.projectFile
+            if globals.GApp.workspace.projectWorkdir:
+                print "Project Working directory:\t\t" + globals.GApp.workspace.projectWorkdir
+            print "Project Config directory:\t\t" + globals.GApp.workspace.projectConfigs
+            print
+
+            qemu_flash_drives_directory = os.path.dirname(globals.GApp.workspace.projectFile) + os.sep + 'qemu-flash-drives'
+            if os.access(qemu_flash_drives_directory, os.F_OK):
+                workdir = qemu_flash_drives_directory
+            elif globals.GApp.systconf['qemu'].qemuwrapper_workdir:
+                workdir = globals.GApp.systconf['qemu'].qemuwrapper_workdir
+            else:
+                realpath = os.path.realpath(self.dynagen.global_filename)
+                workdir = os.path.dirname(realpath)
+            print "Qemuwrapper working directory:\t" + workdir
+
+            if globals.GApp.systconf['vbox'].enable_VBoxManager:
+                if globals.GApp.workspace.projectWorkdir:
+                    workdir = globals.GApp.workspace.projectWorkdir
+                elif globals.GApp.systconf['vbox'].vboxwrapper_workdir:
+                    workdir = globals.GApp.systconf['vbox'].vboxwrapper_workdir
+                else:
+                    realpath = os.path.realpath(self.dynagen.global_filename)
+                    workdir = os.path.dirname(realpath)
+                print "Vboxwrapper working directory:\t" + workdir
+            else:
+                print "VBoxManager is disabled"
+
+            print "Dynamips working directory:\t\t" + globals.GApp.systconf['dynamips'].workdir
         else:
             Dynagen_Console.do_show(self, args)
 
@@ -343,7 +393,7 @@ Examples:
             if command == 'mac':
                 try:
                     Dynagen_Console.do_clear(self, args)
-                except Exception,e:
+                except Exception, e:
                     print e
         except ValueError:
             print translate("Console", "Incorrect number of paramaters or invalid parameters")
@@ -455,7 +505,7 @@ Examples:
                                 router = node.get_dynagen_device()
                                 if globals.GApp.iosimages.has_key(router.dynamips.host + ':' + router.image):
                                     image = globals.GApp.iosimages[router.dynamips.host + ':' + router.image]
-                                    image.idlepc =  idles[int(selection)]
+                                    image.idlepc = idles[int(selection)]
                     except:
                         print translate("Console", "Can't apply idlepc value")
             else:
@@ -564,7 +614,7 @@ Examples:
         Dynagen_Console.do_import(self, args)
 
     def do_debug(self, args):
-        """debug [level]\nActivate/Desactivate debugs\nLevel 0: no debugs\nLevel 1: dynamips lib debugs only\nLevel 2: GNS3 debugs only\nLevel 3: GNS3 debugs and dynamips lib debugs"""
+        """debug [level]\nActivate/Deactivate debugs\nLevel 0: no debugs\nLevel 1: dynamips lib debugs only\nLevel 2: GNS3 debugs only\nLevel 3: GNS3 debugs and dynamips lib debugs"""
 
         if len(args) == 1:
             try:

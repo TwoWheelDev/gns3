@@ -26,10 +26,11 @@ import GNS3.Dynagen.portTracker_lib as tracker
 from PyQt4 import QtGui, QtCore, QtNetwork
 from GNS3.QemuManager import QemuManager
 from GNS3.Ui.ConfigurationPages.Form_PreferencesQemu import Ui_PreferencesQemu
-from GNS3.Config.Objects import systemQemuConf, qemuImageConf, pixImageConf, junosImageConf, asaImageConf, idsImageConf
+from GNS3.Config.Objects import systemQemuConf, qemuImageConf, pixImageConf, junosImageConf, asaImageConf, awprouterImageConf, idsImageConf
 from GNS3.Utils import fileBrowser, translate, testIfWritableDir
 from GNS3.Config.Defaults import QEMUWRAPPER_DEFAULT_PATH, QEMUWRAPPER_DEFAULT_WORKDIR
 from GNS3.Config.Config import ConfDB
+from GNS3.Awp.AwpImage import awp_image_parse
 
 class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
 
@@ -52,9 +53,9 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         #self.comboBoxBinding.addItems(['localhost', QtNetwork.QHostInfo.localHostName()] + map(lambda addr: addr.toString(), QtNetwork.QNetworkInterface.allAddresses()))
         mylist = map(lambda addr: addr.toString(), QtNetwork.QNetworkInterface.allAddresses())
         if mylist.__contains__('0:0:0:0:0:0:0:1'):
-            self.comboBoxBinding.addItems(['localhost', '::1', QtNetwork.QHostInfo.localHostName()] + mylist)
+            self.comboBoxBinding.addItems(['localhost', '::1', '0.0.0.0', '::', QtNetwork.QHostInfo.localHostName()] + mylist)
         else:
-            self.comboBoxBinding.addItems(['localhost', QtNetwork.QHostInfo.localHostName()] + mylist)
+            self.comboBoxBinding.addItems(['localhost', '0.0.0.0', QtNetwork.QHostInfo.localHostName()] + mylist)
         self.connect(self.checkBoxQemuWrapperShowAdvancedOptions,  QtCore.SIGNAL('clicked()'), self.slotCheckBoxQemuWrapperShowAdvancedOptions)
 
         # Qemu settings
@@ -62,6 +63,7 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         self.connect(self.SaveQemuImage, QtCore.SIGNAL('clicked()'), self.slotSaveQemuImage)
         self.connect(self.DeleteQemuImage, QtCore.SIGNAL('clicked()'), self.slotDeleteQemuImage)
         self.connect(self.treeWidgetQemuImages,  QtCore.SIGNAL('itemSelectionChanged()'),  self.slotQemuImageSelectionChanged)
+        self.connect(self.QemuFlavor, QtCore.SIGNAL('currentIndexChanged(int)'), self.slotQemuFlavorSelectionChanged)
 
         # PIX settings
         self.connect(self.PIXImage_Browser, QtCore.SIGNAL('clicked()'), self.slotSelectPIXImage)
@@ -81,6 +83,14 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         self.connect(self.SaveASAImage, QtCore.SIGNAL('clicked()'), self.slotSaveASAImage)
         self.connect(self.DeleteASAImage, QtCore.SIGNAL('clicked()'), self.slotDeleteASAImage)
         self.connect(self.treeWidgetASAImages,  QtCore.SIGNAL('itemSelectionChanged()'),  self.slotASAImageSelectionChanged)
+        self.connect(self.pushButtonASAPreconfiguration, QtCore.SIGNAL('clicked()'),self.slotASAPreconfiguration)
+
+        # AWP Router settings
+        self.connect(self.AWPRel_Browser, QtCore.SIGNAL('clicked()'), self.slotSelectAWPRel)
+        self.connect(self.SaveAWPImage, QtCore.SIGNAL('clicked()'), self.slotSaveAWPImage)
+        self.connect(self.DeleteAWPImage, QtCore.SIGNAL('clicked()'), self.slotDeleteAWPImage)
+        self.connect(self.treeWidgetAWPImages,  QtCore.SIGNAL('itemSelectionChanged()'),  self.slotAWPImageSelectionChanged)
+        self.connect(self.pushButtonAWPPreconfiguration, QtCore.SIGNAL('clicked()'),self.slotAWPPreconfiguration)
 
         # IDS settings
         self.connect(self.IDSImage1_Browser, QtCore.SIGNAL('clicked()'), self.slotSelectIDSImage1)
@@ -237,6 +247,18 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         self.treeWidgetASAImages.resizeColumnToContents(0)
         self.treeWidgetASAImages.sortItems(0, QtCore.Qt.AscendingOrder)
 
+        # AW+ router settings
+        for (name, conf) in globals.GApp.awprouterimages.iteritems():
+
+            item = QtGui.QTreeWidgetItem(self.treeWidgetAWPImages)
+            # name column
+            item.setText(0, name)
+            # rel path column
+            item.setText(1, conf.rel)
+
+        self.treeWidgetAWPImages.resizeColumnToContents(0)
+        self.treeWidgetAWPImages.sortItems(0, QtCore.Qt.AscendingOrder)
+
         # IDS settings
         for (name, conf) in globals.GApp.idsimages.iteritems():
 
@@ -282,6 +304,68 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
 
         globals.GApp.systconf['qemu'] = self.conf
         ConfDB().sync()
+        
+        # Check if Qemu Guest settings have been saved
+        name = unicode(self.NameQemuImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.qemuimages.has_key(name) or self.checkForUnsavedQemuImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabQemuGuest)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "Qemu Guest Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved Qemu Guest settings detected. Please save."))
+            return False
+
+        # Check if PIX settings have been saved
+        name = unicode(self.NamePIXImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.piximages.has_key(name) or self.checkForUnsavedPIXImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabPIX)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "PIX Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved PIX settings detected. Please save."))
+            return False
+
+        # Check if JunOS settings have been saved
+        name = unicode(self.NameJunOSImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.junosimages.has_key(name) or self.checkForUnsavedJunOSImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabJunOS)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "JunOS Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved JunOS settings detected. Please save."))
+            return False
+
+        # Check if ASA settings have been saved
+        name = unicode(self.NameASAImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.asaimages.has_key(name) or self.checkForUnsavedASAImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabASA)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "ASA Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved ASA settings detected. Please save."))
+            return False
+        
+        # Check if IDS settings have been saved
+        name = unicode(self.NameIDSImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.idsimages.has_key(name) or self.checkForUnsavedIDSImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabIDS)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "IDS Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved IDS settings detected. Please save."))
+            return False
+        
+        # Check if AW+ settings have been saved
+        name = unicode(self.NameAWPImage.text(), 'utf-8', errors='replace')
+        if len(name) and (not globals.GApp.awprouterimages.has_key(name) or self.checkForUnsavedAWPImage(name) == False):
+            qemu_pane = globals.preferencesWindow.listWidget.findItems("Qemu", QtCore.Qt.MatchFixedString)[0]
+            if qemu_pane:
+                globals.preferencesWindow.listWidget.setCurrentItem(qemu_pane)
+            self.tabWidget.setCurrentWidget(self.tabAWP)
+            QtGui.QMessageBox.warning(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ Settings"), translate("UiConfig_PreferencesDynamips", "Unsaved AW+ settings detected. Please save."))
+            return False
+
+        return True
 
     def slotExternalQemuwrapperChanged(self, text):
 
@@ -309,16 +393,28 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
     def slotSelectQemuWrapperPath(self):
         """ Get a path to Qemuwrapper from the file system
         """
+    
+        qemuwrapper_default_directory = '.'
+        if sys.platform.startswith('darwin') and hasattr(sys, "frozen") and os.path.exists('../Resources/'):
+            qemuwrapper_default_directory = '../Resources/'
 
-        path = fileBrowser('Qemuwrapper', directory='.', parent=globals.preferencesWindow).getFile()
+        path = fileBrowser('Qemuwrapper', directory=qemuwrapper_default_directory, parent=globals.preferencesWindow).getFile()
         if path != None and path[0] != '':
             self.lineEditQemuwrapperPath.setText(os.path.normpath(path[0]))
 
     def slotSelectQemuWrapperWorkdir(self):
         """ Get a working directory for Qemuwrapper from the file system
         """
+        
+        qemuwrapper_default_working_directory = '.'
+        if os.environ.has_key("TEMP"):
+            qemuwrapper_default_working_directory = os.environ["TEMP"]
+        elif os.environ.has_key("TMP"):
+            qemuwrapper_default_working_directory = os.environ["TMP"]
+        elif os.path.exists('/tmp'):
+            qemuwrapper_default_working_directory = unicode('/tmp')
 
-        fb = fileBrowser(translate('Page_PreferencesQemu', 'Local Qemu working directory'), parent=globals.preferencesWindow)
+        fb = fileBrowser(translate('Page_PreferencesQemu', 'Local Qemu working directory'), directory=qemuwrapper_default_working_directory, parent=globals.preferencesWindow)
         path = fb.getDir()
 
         if path:
@@ -332,7 +428,11 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         """ Get a path to Qemu from the file system
         """
 
-        path = fileBrowser('Qemu', directory='.', parent=globals.preferencesWindow).getFile()
+        qemu_default_directory = '.'
+        if sys.platform.startswith('darwin') and hasattr(sys, "frozen") and os.path.exists('../Resources/'):
+            qemu_default_directory = '../Resources/'
+
+        path = fileBrowser('Qemu', directory=qemu_default_directory, parent=globals.preferencesWindow).getFile()
         if path != None and path[0] != '':
             self.lineEditQemuPath.setText(os.path.normpath(path[0]))
 
@@ -340,7 +440,11 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         """ Get a path to Qemu-img from the file system
         """
 
-        path = fileBrowser('Qemu-img', directory='.', parent=globals.preferencesWindow).getFile()
+        qemuimg_default_directory = '.'
+        if sys.platform.startswith('darwin') and hasattr(sys, "frozen") and os.path.exists('../Resources/'):
+            qemuimg_default_directory = '../Resources/'
+
+        path = fileBrowser('Qemu-img', directory=qemuimg_default_directory, parent=globals.preferencesWindow).getFile()
         if path != None and path[0] != '':
             self.lineEditQemuImgPath.setText(os.path.normpath(path[0]))
 
@@ -390,6 +494,7 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         conf.memory = self.QemuMemory.value()
         conf.nic_nb = self.QemuNICNb.value()
         conf.nic = str(self.QemuNIC.currentText())
+        conf.flavor = str(self.QemuFlavor.currentText())
         conf.options = str(self.QemuOptions.text())
 
         if self.QemucheckBoxKVM.checkState() == QtCore.Qt.Checked:
@@ -397,8 +502,39 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         else:
             conf.kvm  = False
 
+        if self.QemucheckBoxMonitor.checkState() == QtCore.Qt.Checked:
+            conf.monitor = True
+        else:
+            conf.monitor  = False
+
+        if self.QemucheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            conf.usermod = True
+        else:
+            conf.usermod = False
+
         globals.GApp.qemuimages[name] = conf
         self.treeWidgetQemuImages.resizeColumnToContents(0)
+        QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "Qemu Guest settings have been saved"))
+
+    def checkForUnsavedQemuImage(self, image):
+        """ Check if current Qemu Guest settings have been saved
+        """
+
+        conf = globals.GApp.qemuimages[image]
+        if conf.filename != unicode(self.QemuImage.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.QemuMemory.value() \
+            or conf.nic_nb != self.QemuNICNb.value() \
+            or conf.nic != str(self.QemuNIC.currentText()) \
+            or conf.flavor != str(self.QemuFlavor.currentText()) \
+            or conf.options != str(self.QemuOptions.text()) \
+            or conf.kvm == True and self.QemucheckBoxKVM.checkState() != QtCore.Qt.Checked \
+            or conf.kvm == False and self.QemucheckBoxKVM.checkState() == QtCore.Qt.Checked \
+            or conf.monitor == True and self.QemucheckBoxMonitor.checkState() != QtCore.Qt.Checked \
+            or conf.monitor == False and self.QemucheckBoxMonitor.checkState() == QtCore.Qt.Checked \
+            or conf.usermod == True and self.QemucheckBoxUserMod.checkState() != QtCore.Qt.Checked \
+            or conf.usermod == False and self.QemucheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            return False
+        return True
 
     def slotDeleteQemuImage(self):
         """ Delete Qemu Image from the list of Qemu images
@@ -429,6 +565,10 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
             self.QemuOptions.setText(conf.options)
             self.QemuNICNb.setValue(conf.nic_nb)
 
+            index = self.QemuFlavor.findText(conf.flavor)
+            if index != -1:
+                self.QemuFlavor.setCurrentIndex(index)
+
             index = self.QemuNIC.findText(conf.nic)
             if index != -1:
                 self.QemuNIC.setCurrentIndex(index)
@@ -437,6 +577,34 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
                 self.QemucheckBoxKVM.setCheckState(QtCore.Qt.Checked)
             else:
                 self.QemucheckBoxKVM.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.monitor == True:
+                self.QemucheckBoxMonitor.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.QemucheckBoxMonitor.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.usermod == True:
+                self.QemucheckBoxUserMod.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.QemucheckBoxUserMod.setCheckState(QtCore.Qt.Unchecked)
+
+    def slotQemuFlavorSelectionChanged(self, index):
+        """ Change the NIC list to match the flavor
+        """
+        NicByFlavor = {
+            'Default':  ['rtl8139', 'e1000', 'i82551', 'i82557b', 'i82559er', 'ne2k_pci', 'pcnet', 'virtio', 'lance', 'smc91c111'], # Show all known NIC
+            '-i386':    ['rtl8139', 'e1000', 'i82551', 'i82557b', 'i82559er', 'ne2k_pci', 'pcnet', 'virtio'],
+            '-x86_64':  ['rtl8139', 'e1000', 'i82551', 'i82557b', 'i82559er', 'ne2k_pci', 'pcnet', 'virtio'],
+            '-sparc':   ['lance'],
+            '-arm':     ['smc91c111'],
+        }
+
+        self.QemuNIC.clear()
+        flavor = str(self.QemuFlavor.currentText())
+        if flavor not in NicByFlavor:
+            flavor = 'Default'
+        for nic in NicByFlavor[flavor]:
+            self.QemuNIC.addItem(nic)
 
     def slotSelectPIXImage(self):
         """ Get a PIX image from the file system
@@ -505,6 +673,21 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         globals.GApp.piximages[name] = conf
         self.treeWidgetPIXImages.resizeColumnToContents(0)
         QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "PIX settings have been saved"))
+
+    def checkForUnsavedPIXImage(self, image):
+        """ Check if current PIX settings have been saved
+        """
+
+        conf = globals.GApp.piximages[image]
+        if conf.filename != unicode(self.PIXImage.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.PIXMemory.value() \
+            or conf.nic_nb != self.PIXNICNb.value() \
+            or conf.nic != str(self.PIXNIC.currentText()) \
+            or conf.options != str(self.PIXOptions.text()) \
+            or conf.serial != str(self.PIXSerial.text().toAscii()) \
+            or conf.key != str(self.PIXKey.text().toAscii()):
+            return False
+        return True
 
     def slotDeletePIXImage(self):
         """ Delete PIX Image from the list of PIX images
@@ -595,9 +778,38 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         else:
             conf.kvm  = False
 
+        if self.JunOScheckBoxMonitor.checkState() == QtCore.Qt.Checked:
+            conf.monitor = True
+        else:
+            conf.monitor  = False
+
+        if self.JunOScheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            conf.usermod = True
+        else:
+            conf.usermod = False
+
         globals.GApp.junosimages[name] = conf
         self.treeWidgetJunOSImages.resizeColumnToContents(0)
         QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "JunOS settings have been saved"))
+
+    def checkForUnsavedJunOSImage(self, image):
+        """ Check if current JunOS settings have been saved
+        """
+
+        conf = globals.GApp.junosimages[image]
+        if conf.filename != unicode(self.JunOSImage.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.JunOSMemory.value() \
+            or conf.nic_nb != self.JunOSNICNb.value() \
+            or conf.nic != str(self.JunOSNIC.currentText()) \
+            or conf.options != str(self.JunOSOptions.text()) \
+            or conf.kvm == True and self.JunOScheckBoxKVM.checkState() != QtCore.Qt.Checked \
+            or conf.kvm == False and self.JunOScheckBoxKVM.checkState() == QtCore.Qt.Checked \
+            or conf.monitor == True and self.JunOScheckBoxMonitor.checkState() != QtCore.Qt.Checked \
+            or conf.monitor == False and self.JunOScheckBoxMonitor.checkState() == QtCore.Qt.Checked \
+            or conf.usermod == True and self.JunOScheckBoxUserMod.checkState() != QtCore.Qt.Checked \
+            or conf.usermod == False and self.JunOScheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            return False
+        return True
 
     def slotDeleteJunOSImage(self):
         """ Delete JunOS Image from the list of JunOS images
@@ -636,6 +848,16 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
                 self.JunOScheckBoxKVM.setCheckState(QtCore.Qt.Checked)
             else:
                 self.JunOScheckBoxKVM.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.monitor == True:
+                self.JunOScheckBoxMonitor.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.JunOScheckBoxMonitor.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.usermod == True:
+                self.JunOScheckBoxUserMod.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.JunOScheckBoxUserMod.setCheckState(QtCore.Qt.Unchecked)
 
     def slotSelectASAKernel(self):
         """ Get an ASA kernel from the file system
@@ -705,9 +927,40 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         else:
             conf.kvm  = False
 
+        if self.ASAcheckBoxMonitor.checkState() == QtCore.Qt.Checked:
+            conf.monitor = True
+        else:
+            conf.monitor  = False
+
+        if self.ASAcheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            conf.usermod = True
+        else:
+            conf.usermod = False
+
         globals.GApp.asaimages[name] = conf
         self.treeWidgetASAImages.resizeColumnToContents(0)
         QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "ASA settings have been saved"))
+
+    def checkForUnsavedASAImage(self, image):
+        """ Check if current ASA settings have been saved
+        """
+
+        conf = globals.GApp.asaimages[image]
+        if conf.initrd != unicode(self.ASAInitrd.text(), 'utf-8', errors='replace') \
+            or conf.kernel != unicode(self.ASAKernel.text(), 'utf-8', errors='replace') \
+            or conf.kernel_cmdline != unicode(self.ASAKernelCmdLine.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.ASAMemory.value() \
+            or conf.nic_nb != self.ASANICNb.value() \
+            or conf.nic != str(self.ASANIC.currentText()) \
+            or conf.options != str(self.ASAOptions.text()) \
+            or conf.kvm == True and self.ASAcheckBoxKVM.checkState() != QtCore.Qt.Checked \
+            or conf.kvm == False and self.ASAcheckBoxKVM.checkState() == QtCore.Qt.Checked \
+            or conf.monitor == True and self.ASAcheckBoxMonitor.checkState() != QtCore.Qt.Checked \
+            or conf.monitor == False and self.ASAcheckBoxMonitor.checkState() == QtCore.Qt.Checked \
+            or conf.usermod == True and self.ASAcheckBoxUserMod.checkState() != QtCore.Qt.Checked \
+            or conf.usermod == False and self.ASAcheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            return False
+        return True
 
     def slotDeleteASAImage(self):
         """ Delete ASA Image from the list of ASA images
@@ -748,6 +1001,36 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
                 self.ASAcheckBoxKVM.setCheckState(QtCore.Qt.Checked)
             else:
                 self.ASAcheckBoxKVM.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.monitor == True:
+                self.ASAcheckBoxMonitor.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.ASAcheckBoxMonitor.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.usermod == True:
+                self.ASAcheckBoxUserMod.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.ASAcheckBoxUserMod.setCheckState(QtCore.Qt.Unchecked)
+       
+    def slotASAPreconfiguration(self):
+        """ Apply preconfigured settings
+        """
+
+        asa_preconfiguration = self.comboBoxASAPreconfiguration.currentText()
+        if asa_preconfiguration == 'ASA 8.0(2)':
+            self.NameASAImage.setText("ASA 8.0(2)")
+            self.ASAMemory.setValue(512)
+            self.ASANICNb.setValue(6)
+            self.ASANIC.setCurrentIndex(self.ASANIC.findText("e1000"))
+            self.ASAOptions.setText("-vga none -hdachs 980,16,32")
+            self.ASAKernelCmdLine.setText("auto nousb ide1=noprobe bigphysarea=16384 console=ttyS0,9600n8 hda=980,16,32")
+        elif asa_preconfiguration == 'ASA 8.4(2)':
+            self.NameASAImage.setText("ASA 8.4(2)")
+            self.ASAMemory.setValue(1024)
+            self.ASANICNb.setValue(6)
+            self.ASANIC.setCurrentIndex(self.ASANIC.findText("e1000"))
+            self.ASAOptions.setText("-vga none -icount auto -hdachs 980,16,32")
+            self.ASAKernelCmdLine.setText("ide_generic.probe_mask=0x01 ide_core.chs=0.0:980,16,32 auto nousb console=ttyS0,9600 bigphysarea=65536")
 
     def slotSelectIDSImage1(self):
         """ Get a IDS image (hda) from the file system
@@ -816,9 +1099,39 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
         else:
             conf.kvm  = False
 
+        if self.IDScheckBoxMonitor.checkState() == QtCore.Qt.Checked:
+            conf.kvm = True
+        else:
+            conf.kvm  = False
+
+        if self.IDScheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            conf.usermod = True
+        else:
+            conf.usermod = False
+
         globals.GApp.idsimages[name] = conf
         self.treeWidgetIDSImages.resizeColumnToContents(0)
         QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "IDS settings have been saved"))
+
+    def checkForUnsavedIDSImage(self, image):
+        """ Check if current IDS settings have been saved
+        """
+
+        conf = globals.GApp.idsimages[image]
+        if conf.image1 != unicode(self.IDSImage1.text(), 'utf-8', errors='replace') \
+            or conf.image2 != unicode(self.IDSImage2.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.IDSMemory.value() \
+            or conf.nic_nb != self.IDSNICNb.value() \
+            or conf.nic != str(self.IDSNIC.currentText()) \
+            or conf.options != str(self.IDSOptions.text()) \
+            or conf.kvm == True and self.IDScheckBoxKVM.checkState() != QtCore.Qt.Checked \
+            or conf.kvm == False and self.IDScheckBoxKVM.checkState() == QtCore.Qt.Checked \
+            or conf.monitor == True and self.IDScheckBoxMonitor.checkState() != QtCore.Qt.Checked \
+            or conf.monitor == False and self.IDScheckBoxMonitor.checkState() == QtCore.Qt.Checked \
+            or conf.usermod == True and self.IDScheckBoxUserMod.checkState() != QtCore.Qt.Checked \
+            or conf.usermod == False and self.IDScheckBoxUserMod.checkState() == QtCore.Qt.Checked:
+            return False
+        return True
 
     def slotDeleteIDSImage(self):
         """ Delete IDS Image from the list of IDS images
@@ -859,6 +1172,16 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
             else:
                 self.IDScheckBoxKVM.setCheckState(QtCore.Qt.Unchecked)
 
+            if conf.monitor == True:
+                self.IDScheckBoxMonitor.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.IDScheckBoxMonitor.setCheckState(QtCore.Qt.Unchecked)
+
+            if conf.usermod == True:
+                self.IDScheckBoxUserMod.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.IDScheckBoxUserMod.setCheckState(QtCore.Qt.Unchecked)
+
     def __testQemu(self):
 
 
@@ -881,11 +1204,11 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
 
             globals.GApp.workspace.clear()
             globals.GApp.QemuManager = QemuManager()
-            if globals.GApp.QemuManager.preloadQemuwrapper() == False:
-                if hasattr(sys, "frozen") and (globals.GApp.systconf['qemu'].qemuwrapper_path.split('.')[-1] == 'py'):
-                    self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "Failed to start Qemuwrapper (python.exe path must be in your PATH environment variable)")  + '</font>')
-                else:
-                    self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "Failed to start Qemuwrapper")  + '</font>')
+
+            try:
+                globals.GApp.QemuManager.preloadQemuwrapper(self.conf.qemuwrapper_port)
+            except Exception as QMerror:
+                self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "Failed to start Qemuwrapper: ") + QMerror.args[0]  + '</font>')
                 return
 
             try:
@@ -897,7 +1220,7 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
 
             if platform.system() != 'Windows':
                 # we test this only on non-Windows versions of GNS3, because our patched
-                # Qemu-0.11 for Windows is buggy, and fails to return 'qemu --help' results.
+                # Qemu-0.11 for Windows is buggy, and fails to return 'qemu -help' results.
                 qemu_check= 0
                 try:
                     p = subprocess.Popen([globals.GApp.systconf['qemu'].qemu_path, '-help'], cwd=globals.GApp.systconf['qemu'].qemuwrapper_workdir, stdout = subprocess.PIPE)
@@ -908,16 +1231,24 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
                 if qemustdout[0].__contains__('for dynamips/pemu/GNS3'):
                     qemu_check = qemu_check + 1
                 try:
-                    p = subprocess.Popen([globals.GApp.systconf['qemu'].qemu_path, '--net', 'socket'], cwd=globals.GApp.systconf['qemu'].qemuwrapper_workdir, stderr = subprocess.PIPE)
+                    p = subprocess.Popen([globals.GApp.systconf['qemu'].qemu_path, '-net', 'socket'], cwd=globals.GApp.systconf['qemu'].qemuwrapper_workdir, stderr = subprocess.PIPE)
                     qemustderr = p.communicate()
                 except:
                     self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "Failed to start qemu")  + '</font>')
                     return
                 if qemustderr[1].__contains__('udp='):
                     qemu_check = qemu_check + 1
+                try:
+                    p = subprocess.Popen([globals.GApp.systconf['qemu'].qemu_path, '-version'], cwd=globals.GApp.systconf['qemu'].qemuwrapper_workdir, stdout = subprocess.PIPE)
+                    qemustdout = p.communicate()
+                except:
+                    self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "Failed to start qemu")  + '</font>')
+                    return
+                if qemustdout[0].__contains__('gns3'):
+                    qemu_check = qemu_check + 1
 
                 if qemu_check == 0:
-                    self.labelQemuStatus.setText('<font color="red">' + translate("UiConfig_PreferencesQemu", "You're running an old AND unpatched version of qemu, which won't work")  + '</font>')
+                    self.labelQemuStatus.setText('<font color="yellow">' + translate("UiConfig_PreferencesQemu", "You're probably running an old AND unpatched version of qemu\nconnections to other devices may not work")  + '</font>')
                     return
 
             # PEMU must be located in the same folder as Qemuwrapper
@@ -951,8 +1282,174 @@ class UiConfig_PreferencesQemu(QtGui.QWidget, Ui_PreferencesQemu):
                 return
 
             if platform.system() == 'Darwin':
-                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "Qemuwrapper, qemu and qemu-img have successfully started")  + '</font><br><font color="red">' + translate("UiConfig_PreferencesQemu", " (except pemu that is not supported on Mac OS X)")  + '</font></a>')
+                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "All components have successfully started")  + '</font><br><font color="red">' + translate("UiConfig_PreferencesQemu", "Except Pemu (PIX emulation), not supported on OSX")  + '</font></a>')
             elif bPEMUfound:
-                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "Qemuwrapper, qemu, qemu-img and pemu have successfully started")  + '</font>')
+                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "All components have successfully started")  + '</font>')
             else:
-                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "Qemuwrapper, qemu and qemu-img have successfully started")  + '</font><br>'+'<a href="http://www.gns3.net/gns3-pix-firewall-emulation/"><font color="red">' + translate("UiConfig_PreferencesQemu", " (except pemu)")  + '</font></a>')
+                self.labelQemuStatus.setText('<font color="green">' + translate("UiConfig_PreferencesQemu", "All components have successfully started")  + '</font><br>'+'<a href="http://www.gns3.net/gns3-pix-firewall-emulation/"><font color="red">' + translate("UiConfig_PreferencesQemu", " (except pemu)")  + '</font></a>')
+
+    ###########################
+    # AWP SOFT32 GUI HANDLERS
+    ###########################
+
+    def slotSelectAWPRel(self):
+        """ Get an AWP release file from the file system
+        """
+
+        path = fileBrowser('AWP Release File', directory=globals.GApp.systconf['general'].ios_path, parent=globals.preferencesWindow).getFile()
+        if path != None and path[0] != '':
+            # check file extension
+            if not path[0].endswith('.rel'):
+                QtGui.QMessageBox.critical(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ router"),
+                translate("Page_PreferencesQemu", "Invalid AWP release file!"))
+                return
+            
+            rel_file = os.path.normpath(path[0])
+            self.AWPRel.clear()
+            self.AWPRel.setText(rel_file)
+
+    def slotSaveAWPImage(self):
+        """ Add/Save AWP Image in the list of AWP images
+        """
+
+        name = unicode(self.NameAWPImage.text(), 'utf-8', errors='replace')
+        rel = unicode(self.AWPRel.text(), 'utf-8', errors='replace')
+
+        if not name or not rel:
+            QtGui.QMessageBox.critical(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ router"),
+                                       translate("Page_PreferencesQemu", "Profile name and release file must be set!"))
+            return
+
+        # check release file extension
+        if not rel.endswith('.rel'):
+            QtGui.QMessageBox.critical(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ router"),
+            translate("Page_PreferencesQemu", "Invalid AWP release file"))
+            return
+
+        # check release file existence
+        if not os.path.exists(rel):
+            QtGui.QMessageBox.critical(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ router"),
+            translate("Page_PreferencesQemu", "Release file does not exist"))
+            return
+
+        # make sure image directory exists
+        ios_path = globals.GApp.systconf['general'].ios_path
+        if ios_path and not os.path.exists(ios_path):
+            QtGui.QMessageBox.critical(globals.preferencesWindow, translate("Page_PreferencesQemu", "AW+ router"),
+                                       translate("Page_PreferencesQemu", "Image directory does not exist"))
+            return
+
+        # parse the release file to get initrd and kernel image
+        img_path_dict = {}
+        awp_image_parse(rel, ios_path, img_path_dict)
+
+        initrd = img_path_dict['initrd']
+        kernel = img_path_dict['kernel']
+
+        if globals.GApp.awprouterimages.has_key(name):
+            # update an already existing AWP initrd + kernel
+            item_to_update = self.treeWidgetAWPImages.findItems(name, QtCore.Qt.MatchFixedString)[0]
+            item_to_update.setText(1, rel)
+        else:
+            # else create a new entry
+            item = QtGui.QTreeWidgetItem(self.treeWidgetAWPImages)
+            # image name column
+            item.setText(0, name)
+            # rel path column
+            item.setText(1, rel)
+
+        # save settings
+        if globals.GApp.awprouterimages.has_key(name):
+            conf = globals.GApp.awprouterimages[name]
+        else:
+            conf = awprouterImageConf()
+
+        conf.id = globals.GApp.awprouterimages_ids
+        globals.GApp.awprouterimages_ids += 1
+        conf.name = name
+        conf.initrd = initrd
+        conf.kernel = kernel
+        conf.rel = rel
+        conf.kernel_cmdline = unicode(self.AWPKernelCmdLine.text(), 'utf-8', errors='replace')
+        conf.memory = self.AWPMemory.value()
+        conf.nic_nb = self.AWPNICNb.value()
+        conf.nic = str(self.AWPNIC.currentText())
+        conf.options = str(self.AWPOptions.text())
+
+        if self.AWPcheckBoxKVM.checkState() == QtCore.Qt.Checked:
+            conf.kvm = True
+        else:
+            conf.kvm  = False
+
+        globals.GApp.awprouterimages[name] = conf
+        self.treeWidgetAWPImages.resizeColumnToContents(0)
+        QtGui.QMessageBox.information(globals.preferencesWindow, translate("Page_PreferencesQemu", "Save"),  translate("Page_PreferencesQemu", "AW+ settings have been saved"))
+
+    def checkForUnsavedAWPImage(self, image):
+        """ Check if current AW+ settings have been saved
+        """
+
+        conf = globals.GApp.awprouterimages[image]
+        if conf.rel != unicode(self.AWPRel.text(), 'utf-8', errors='replace') \
+            or conf.kernel_cmdline != unicode(self.AWPKernelCmdLine.text(), 'utf-8', errors='replace') \
+            or conf.memory != self.AWPMemory.value() \
+            or conf.nic_nb != self.AWPNICNb.value() \
+            or conf.nic != str(self.AWPNIC.currentText()) \
+            or conf.options != str(self.AWPOptions.text()) \
+            or conf.kvm == True and self.AWPcheckBoxKVM.checkState() != QtCore.Qt.Checked \
+            or conf.kvm == False and self.AWPcheckBoxKVM.checkState() == QtCore.Qt.Checked:
+            return False
+        return True
+
+    def slotDeleteAWPImage(self):
+        """ Delete AWP Image from the list of AWP images
+        """
+
+        item = self.treeWidgetAWPImages.currentItem()
+        if (item != None):
+            self.treeWidgetAWPImages.takeTopLevelItem(self.treeWidgetAWPImages.indexOfTopLevelItem(item))
+            name = unicode(item.text(0), 'utf-8', errors='replace')
+            del globals.GApp.awprouterimages[name]
+            globals.GApp.syncConf()
+
+    def slotAWPImageSelectionChanged(self):
+        """ Load AWP settings into the GUI when selecting an entry in the list of AWP images
+        """
+
+        # Only one selection is possible
+        items = self.treeWidgetAWPImages.selectedItems()
+        if len(items):
+            item = items[0]
+            name = unicode(item.text(0), 'utf-8', errors='replace')
+
+            conf = globals.GApp.awprouterimages[name]
+
+            self.NameAWPImage.setText(name)
+            self.AWPRel.setText(conf.rel)
+            self.AWPKernelCmdLine.setText(conf.kernel_cmdline)
+            self.AWPMemory.setValue(conf.memory)
+            self.AWPOptions.setText(conf.options)
+            self.AWPNICNb.setValue(conf.nic_nb)
+
+            index = self.AWPNIC.findText(conf.nic)
+            if index != -1:
+                self.AWPNIC.setCurrentIndex(index)
+
+            if conf.kvm == True:
+                self.AWPcheckBoxKVM.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.AWPcheckBoxKVM.setCheckState(QtCore.Qt.Unchecked)
+
+    def slotAWPPreconfiguration(self):
+        """ Apply preconfigured settings
+        """
+
+        awp_preconfiguration = self.comboBoxAWPPreconfiguration.currentText()
+        if awp_preconfiguration == 'Educational Release':
+            self.NameAWPImage.setText("Educational")
+            self.AWPMemory.setValue(256)
+            self.AWPNICNb.setValue(6)
+            self.AWPNIC.setCurrentIndex(self.AWPNIC.findText("virtio"))
+            self.AWPOptions.setText("-nodefaults -vnc none -vga none")
+            self.AWPKernelCmdLine.setText("root=/dev/ram0 releasefile=0.0.0-test.rel console=ttyS0,0 no_autorestart loglevel=1")
+

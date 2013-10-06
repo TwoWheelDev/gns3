@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 
 """
 dynagen_vbox_lib.py
@@ -27,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #debuglevel: 0=disabled, 1=default, 2=debug, 3=deep debug
 debuglevel = 0
 
+import time
 import platform, os, sys
 import portTracker_lib as tracker
 
@@ -58,7 +58,7 @@ def debugmsg(level, message):
 msg = "WELCOME to dynagen_vbox_lib.py"
 debugmsg(2, msg)
 
-from dynamips_lib import NIO_udp, send, dowarning, debug, DynamipsError, validate_connect, Bridge, DynamipsVerError, get_reverse_udp_nio, Router, FRSW, ATMSW, ETHSW, DynamipsWarning
+from dynamips_lib import NIO_udp, send, dowarning, debug, DynamipsError, validate_connect, Bridge, DynamipsVerError, get_reverse_udp_nio, Router, FRSW, ATMSW, ETHSW, Hub, DynamipsWarning
 import random
 import socket
 
@@ -105,7 +105,9 @@ class UDPConnection:
         elif isinstance(remote_device, ATMSW):
             return ' is connected to ATM switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
         elif isinstance(remote_device, ETHSW):
-            return ' is connected to ethernet switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
+            return ' is connected to Ethernet switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
+        elif isinstance(remote_device, Hub):
+            return ' is connected to Ethernet hub ' + remote_device.name + ' port ' + str(remote_port) + '\n'
         elif remote_device == 'nothing':  #if this is only UDP NIO without the other side...used in dynamips <-> UDP for example
             return ' is connected to UDP NIO, with source port ' + str(self.sport) + ' and remote port ' + str(self.dport) + ' on ' + self.daddr + '\n'
         else:
@@ -271,7 +273,7 @@ class VBox(object):
 
     def _getvboxversion(self):
         """ Return the version of VirtualBox"""
-        
+
         return self._vbox_version
 
     vbox_version = property(_getvboxversion, doc='Detected VirtualBox version')
@@ -302,7 +304,7 @@ class AnyVBoxEmuDevice(object):
             'netcard': 'automatic',
             'guestcontrol_user' : None,
             'guestcontrol_password': None,
-            'first_nic_managed': False,
+            'first_nic_managed': True,
             'headless_mode': False,
             'console_support': False,
             'console_telnet_server': False,
@@ -319,7 +321,7 @@ class AnyVBoxEmuDevice(object):
         self._console_telnet_server = self.defaults['console_telnet_server']
 
         self.nios = {}
-        for i in range(self._nics + 1):
+        for i in range(self._nics):
             self.nios[i] = None
 
         send(self.p, 'vbox create %s %s' % (self.vbox_dev_type, self.name))
@@ -330,7 +332,11 @@ class AnyVBoxEmuDevice(object):
         self._console = self.track.allocateTcpPort(self.p.host, self.p.baseconsole)
         send(self.p, 'vbox setattr %s console %i' % (self.name, self._console))
         self.p.baseconsole += 1
-
+        self.starttime = int(time.time())
+        self.suspendtime = self.starttime
+        self.stoptime = self.starttime
+        self.waittime = 0
+                                
     def delete(self):
         """delete the virtualized device instance in VBox"""
         debugmsg(2, "AnyVBoxEmuDevice::delete()")
@@ -352,6 +358,11 @@ class AnyVBoxEmuDevice(object):
         r = send(self.p, 'vbox start %s' % self.name)
         r = send(self.p, 'vbox start %s' % self.name)
         self.state = 'running'
+
+        # Updates the starttime.
+        self.starttime = int(time.time())
+        self.waittime = 0
+
         return r
 
     def stop(self):
@@ -363,6 +374,10 @@ class AnyVBoxEmuDevice(object):
         self.state = 'stopped'
         r = send(self.p, 'vbox stop %s' % self.name)
         r = send(self.p, 'vbox stop %s' % self.name)
+
+        # Updates the starttime.
+        self.stoptime = int(time.time())
+
         return r
 
     def reset(self):
@@ -374,6 +389,11 @@ class AnyVBoxEmuDevice(object):
         r = send(self.p, 'vbox reset %s' % self.name)
         r = send(self.p, 'vbox reset %s' % self.name)
         self.state = 'running'
+
+        # Updates the starttime.
+        self.starttime = int(time.time())
+        self.waittime = 0
+
         return r
 
     def clean(self):
@@ -423,6 +443,10 @@ class AnyVBoxEmuDevice(object):
         r = send(self.p, 'vbox suspend %s' % self.name)
         debugmsg(3, "AnyVBoxEmuDevice::suspend(), r = %s" % str(r))
         self.state = 'suspended'
+
+        # Updates the starttime.
+        self.suspendtime = int(time.time())
+
         return r
 
     def resume(self):
@@ -436,6 +460,10 @@ class AnyVBoxEmuDevice(object):
         r = send(self.p, 'vbox resume %s' % self.name)
         r = send(self.p, 'vbox resume %s' % self.name)
         self.state = 'running'
+
+        # Updates the starttime.
+        self.waittime += (int(time.time()) - self.suspendtime)
+
         return r
 
     def vboxexec(self, command):
@@ -491,7 +519,7 @@ class AnyVBoxEmuDevice(object):
         send(self.p, 'vbox setattr %s nics %s' % (self.name, str(nics)))
         self._nics = nics
         new_nios = {}
-        for i in range(self._nics + 1):
+        for i in range(self._nics):
             if self.nios.has_key(i):
                 new_nios[i] = self.nios[i]
             else:
@@ -722,11 +750,16 @@ class AnyVBoxEmuDevice(object):
         return (src_udp, dst_udp)
 
     def connect_to_dynamips(self, local_port, dynamips, remote_slot, remote_int, remote_port):
+
+        if self.nios.has_key(local_port) and self.nios[local_port] != None:
+            debug("%s: port %i has already a UDP connection" % (self.name, local_port))
+            return
+
         #figure out the destionation port according to interface descritors
         debugmsg(2, "AnyVBoxEmuDevice::connect_to_dynamips(%s, dynamips, dynamips, %s, %s)" % (str(local_port), str(remote_int), str(remote_port)))
         #debugmsg(2, "AnyVBoxEmuDevice::connect_to_dynamips()")
         debugmsg(3, "remote_slot.adapter = %s" % str(remote_slot.adapter))
-        if remote_slot.adapter in ['ETHSW', 'ATMSW', 'ATMBR', 'FRSW', 'Bridge']:
+        if remote_slot.adapter in ['ETHSW', 'ATMSW', 'ATMBR', 'FRSW', 'Bridge', 'Hub']:
             # This is a virtual switch that doesn't provide interface descriptors
             dst_port = remote_port
         else:
@@ -800,14 +833,20 @@ class AnyVBoxEmuDevice(object):
             del self.nios[local_port]
 
     def isLocalhost(self, i_host):
-        if i_host == 'localhost' or i_host == '127.0.0.1' or i_host == '::1' or i_host == "0:0:0:0:0:0:0:1":
+        if i_host in tracker.portTracker().local_addresses:
             return True
         else:
             return False
 
     def connect_to_emulated_device(self, local_port, remote_emulated_device, remote_port):
+
         debugmsg(2, "AnyVBoxEmuDevice::connect_to_emulated_device(%s, %s, %s)" % (str(local_port), unicode(remote_emulated_device), str(remote_port)))
         from qemu_lib import Qemu, QemuDevice, AnyEmuDevice
+
+        if self.nios.has_key(local_port) and self.nios[local_port] != None:
+            debug("%s: port %i has already a UDP connection" % (self.name, local_port))
+            return
+
         (src_udp, dst_udp) = self.__allocate_udp_port(remote_emulated_device.p)
 
         """ # WARNING: This code crashes on multi-host setups: (when connecting to Dynamips switch)
@@ -913,10 +952,10 @@ class AnyVBoxEmuDevice(object):
         from qemu_lib import AnyEmuDevice
         # hide vbox internal interface (self._nics - 1)
         slot_info = '   Slot 0 hardware is ' + self._netcard + ' with ' + str(self._nics) + ' Ethernet interfaces\n'
-        ignore_ports = [0] # port 0 doesn't exists
-        if not self._first_nic_managed:
-            slot_info = slot_info + "      Ethernet1 is the VirtualBox management interface\n"
-            ignore_ports.append(1) # port 1 is the VirtualBox management interface
+        ignore_ports = []
+        if self._first_nic_managed:
+            slot_info = slot_info + "      Ethernet0 is the VirtualBox management interface\n"
+            ignore_ports.append(0) # port 0 is the VirtualBox management interface
         for port in self.nios:
             if port in ignore_ports:
                 continue
@@ -934,13 +973,15 @@ class AnyVBoxEmuDevice(object):
                 elif isinstance(remote_device, ATMSW):
                     slot_info = slot_info + ' is connected to ATM switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
                 elif isinstance(remote_device, ETHSW):
-                    slot_info = slot_info + ' is connected to ethernet switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
+                    slot_info = slot_info + ' is connected to Ethernet switch ' + remote_device.name + ' port ' + str(remote_port) + '\n'
+                elif isinstance(remote_device, Hub):
+                    slot_info = slot_info + ' is connected to Ethernet hub ' + remote_device.name + ' port ' + str(remote_port) + '\n'
                 elif remote_device == 'nothing':  #if this is only UDP NIO without the other side...used in dynamips <-> UDP for example
                     slot_info = slot_info + ' is connected to UDP NIO, with source port ' + str(self.nios[port].sport) + ' and remote port  ' + str(self.nios[port].dport) + ' on ' + self.nios[port].daddr + '\n'
                 else:
                     slot_info = slot_info + ' is connected to unknown device ' + remote_device.name + '\n'
                 # Get network stats and guest IP addresses
-                slot_info = self.slot_info_niostat(slot_info, port)
+                # slot_info = self.slot_info_niostat(slot_info, port) #FIXME: apparently this slow things down, for instance when moving a node. Also, the counters don't seem to get updated.
             else:  #no NIO on this port, so it must be empty
                 slot_info = slot_info + ' is empty\n'
         debugmsg(3, "AnyVBoxEmuDevice::slot_info(), returns %s" % unicode(slot_info))
@@ -950,13 +991,33 @@ class AnyVBoxEmuDevice(object):
         """prints information about specific device"""
         #debugmsg(2, "AnyVBoxEmuDevice::info()")
 
+        # Uptime of the device.
+        def utimetotxt(utime):
+            (zmin, zsec) = divmod(utime, 60)
+            (zhur, zmin) = divmod(zmin, 60)
+            (zday, zhur) = divmod(zhur, 24)
+            utxt = ('%d %s, ' % (zday, 'days'  if (zday != 1) else 'day')  if (zday > 0) else '') + \
+                   ('%d %s, ' % (zhur, 'hours' if (zhur != 1) else 'hour') if ((zhur > 0) or (zday > 0)) else '') + \
+                   ('%d %s'   % (zmin, 'mins'  if (zmin != 1) else 'min'))
+            return utxt
+
+        if (self.state == 'running'):
+            txtuptime = '  Device running time is ' + utimetotxt((int(time.time()) - self.starttime) - self.waittime)
+        elif (self.state == 'suspended'):
+            txtuptime = '  Device suspended time is ' + utimetotxt(int(time.time()) - self.suspendtime)
+        elif (self.state == 'stopped'):
+            txtuptime = '  Device stopped time is ' + utimetotxt(int(time.time()) - self.stoptime)
+        else:
+            txtuptime = '  Device uptime is unknown'
+
         info = '\n'.join([
             '%s %s is %s' % (self._ufd_machine, self.name, self.state),
             '  Hardware is %s %s' % (self._ufd_hardware, self.model_string),
+            txtuptime,
             '  %s\'s wrapper runs on %s:%s' % (self._ufd_machine, self.dynamips.host, self.dynamips.port),
             '  Image is %s' % self.image
         ])
-        
+
         if self.console_support and self.console_telnet_server:
             info += '\n' + '  Listenning on console port %s (access via Telnet)' % self.console
         elif self.console_support:

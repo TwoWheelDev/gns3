@@ -2,7 +2,8 @@
 hostname %h
 !
 no ip domain lookup
-ip domain-name lab.local
+no ip icmp rate-limit unreachable
+ip tcp synwait 5
 !
 line con 0
  exec-timeout 0 0

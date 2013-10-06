@@ -15,15 +15,20 @@ FILES=" Form_MainWindow
 	Form_StartupConfig
 	Form_MACTableDialog
 	Form_IDLEPCDialog
+        Form_DeployementWizard
+        Form_ConfigureNetworkObject
+	Form_TipsDialog
         ./ConfigurationPages/Form_IOSRouterPage
         ./ConfigurationPages/Form_CloudPage
         ./ConfigurationPages/Form_ETHSWPage
+        ./ConfigurationPages/Form_HubPage
         ./ConfigurationPages/Form_FRSWPage
         ./ConfigurationPages/Form_ATMSWPage
         ./ConfigurationPages/Form_ATMBRPage
         ./ConfigurationPages/Form_PIXPage
         ./ConfigurationPages/Form_ASAPage
         ./ConfigurationPages/Form_JunOSPage
+	./ConfigurationPages/Form_AWPPage
         ./ConfigurationPages/Form_IDSPage
         ./ConfigurationPages/Form_QemuPage
         ./ConfigurationPages/Form_VirtualBoxPage
@@ -33,6 +38,7 @@ FILES=" Form_MainWindow
         ./ConfigurationPages/Form_PreferencesCapture
         ./ConfigurationPages/Form_PreferencesQemu
         ./ConfigurationPages/Form_PreferencesVirtualBox
+        ./ConfigurationPages/Form_PreferencesDeployementWizard
 "
 
 # Update files...

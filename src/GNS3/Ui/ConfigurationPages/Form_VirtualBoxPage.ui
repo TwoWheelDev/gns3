@@ -49,11 +49,16 @@
      <property name="enabled">
       <bool>true</bool>
      </property>
+     <property name="toolTip">
+      <string>Maximum NICs with PIIX3 chipset is 8.
+Maximum NICs with ICH9 chipset is 36.
+Please, see VirtualBox settings to change the chipset.</string>
+     </property>
      <property name="minimum">
       <number>2</number>
      </property>
      <property name="maximum">
-      <number>8</number>
+      <number>36</number>
      </property>
      <property name="singleStep">
       <number>1</number>
@@ -111,10 +116,10 @@
    <item row="3" column="0" colspan="2">
     <widget class="QCheckBox" name="checkBoxVBoxFirstInterfaceManaged">
      <property name="text">
-      <string>Do not use first NIC for connections with the host OS</string>
+      <string>Reserve first NIC for VirtualBox NAT to host OS</string>
      </property>
      <property name="checked">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -127,6 +132,9 @@
    </item>
    <item row="5" column="0" colspan="2">
     <widget class="QCheckBox" name="checkBoxVboxConsoleServer">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="text">
       <string>Enable console server (for remote access)</string>
      </property>

@@ -1,5 +1,4 @@
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 #       OpenAlea.Visualea: OpenAlea graphical user interface
 #
@@ -294,6 +293,9 @@ class PyCutExt(QTextEdit):
         text  = e.text()
         key   = e.key()
 
+        # Keep the cursor after the last prompt.
+        self.moveCursor(QTextCursor.End)
+
         if key == Qt.Key_Backspace:
             if self.point:
                 cursor = self.textCursor()
@@ -363,6 +365,8 @@ class PyCutExt(QTextEdit):
         else:
             e.ignore()
 
+        #QTextEdit.keyPressEvent(self, e)   # Causes some trouble
+
     def onKeyPress_Tab(self):
         pass
 
@@ -392,13 +396,14 @@ class PyCutExt(QTextEdit):
 #             return 0
 #         return QTextEdit.focusNextPrevChild(self, next)
 
-    def mousePressEvent(self, e):
-        """
-        Keep the cursor after the last prompt.
-        """
-        if e.button() == Qt.LeftButton:
-            self.moveCursor(QTextCursor.End)
-
+#    def mousePressEvent(self, e):
+#        """
+#        Keep the cursor after the last prompt.
+#        """
+#        if e.button() == Qt.LeftButton:
+#            self.moveCursor(QTextCursor.End)
+#
+#        QTextEdit.mousePressEvent(self, e)
 
     def contentsContextMenuEvent(self,ev):
         """

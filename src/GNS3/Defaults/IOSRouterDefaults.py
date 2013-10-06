@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -38,6 +37,8 @@ class IOSRouterDefaults(AbstractDefaults):
         self.default_confreg = '0x2102'
         self.default_aux = 'None'
         self.default_idlepc = 'None'
+        self.default_idlemax = 1500
+        self.default_idlesleep = 30
         self.default_exec_area = 'None'
         self.default_mmap = True
         self.default_sparsemem = 'False'

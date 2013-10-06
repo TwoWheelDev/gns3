@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -22,6 +21,7 @@
 from PyQt4 import QtCore, QtGui
 from GNS3.Ui.Form_StyleDialog import Ui_StyleDialog
 from GNS3.Utils import translate
+
 
 class StyleDialog(QtGui.QDialog, Ui_StyleDialog):
     """ StyleDialog class
@@ -96,5 +96,3 @@ class StyleDialog(QtGui.QDialog, Ui_StyleDialog):
             self.rotation = self.spinBox_Rotation.value()
             self.borderStyle = QtCore.Qt.PenStyle(self.comboBox_borderStyle.itemData(self.comboBox_borderStyle.currentIndex(), QtCore.Qt.UserRole).toInt()[0])
             QtGui.QDialog.accept(self)
-
-

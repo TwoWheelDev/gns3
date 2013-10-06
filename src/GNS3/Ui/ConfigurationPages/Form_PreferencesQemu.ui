@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>507</width>
-    <height>588</height>
+    <width>547</width>
+    <height>625</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab">
+     <widget class="QWidget" name="tabGeneralSettings">
       <attribute name="title">
        <string>General Settings</string>
       </attribute>
@@ -313,7 +313,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_4">
+     <widget class="QWidget" name="tabQemuGuest">
       <attribute name="title">
        <string>Qemu Guest</string>
       </attribute>
@@ -328,8 +328,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>435</width>
-            <height>507</height>
+            <width>322</width>
+            <height>521</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
@@ -340,16 +340,52 @@
              </property>
              <layout class="QGridLayout" name="gridLayout">
               <item row="0" column="0">
+               <widget class="QLabel" name="label_46">
+                <property name="text">
+                 <string>Qemu flavor:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1" colspan="2">
+               <widget class="QComboBox" name="QemuFlavor">
+                <item>
+                 <property name="text">
+                  <string extracomment="Use the path to Qemu in General Settings">Default</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>-i386</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>-x86_64</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>-sparc</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>-arm</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="0">
                <widget class="QLabel" name="label_14">
                 <property name="text">
                  <string>Identifier name:</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1" colspan="2">
+              <item row="1" column="1" colspan="2">
                <widget class="QLineEdit" name="NameQemuImage"/>
               </item>
-              <item row="1" column="0">
+              <item row="2" column="0">
                <widget class="QLabel" name="label">
                 <property name="enabled">
                  <bool>true</bool>
@@ -359,10 +395,10 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
+              <item row="2" column="1">
                <widget class="QLineEdit" name="QemuImage"/>
               </item>
-              <item row="1" column="2">
+              <item row="2" column="2">
                <widget class="QToolButton" name="QemuImage_Browser">
                 <property name="text">
                  <string>...</string>
@@ -372,14 +408,14 @@
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
+              <item row="3" column="0">
                <widget class="QLabel" name="label_20">
                 <property name="text">
                  <string>RAM:</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="1" colspan="2">
+              <item row="3" column="1" colspan="2">
                <widget class="QSpinBox" name="QemuMemory">
                 <property name="suffix">
                  <string> MiB</string>
@@ -398,14 +434,14 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="0">
+              <item row="4" column="0">
                <widget class="QLabel" name="label_37">
                 <property name="text">
                  <string>Number of NICs:</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="1" colspan="2">
+              <item row="4" column="1" colspan="2">
                <widget class="QSpinBox" name="QemuNICNb">
                 <property name="minimum">
                  <number>0</number>
@@ -421,18 +457,23 @@
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
+              <item row="5" column="0">
                <widget class="QLabel" name="label_10">
                 <property name="text">
                  <string>NIC model:</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="1" colspan="2">
+              <item row="5" column="1" colspan="2">
                <widget class="QComboBox" name="QemuNIC">
                 <property name="currentIndex">
                  <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>rtl8139</string>
@@ -460,11 +501,6 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>e1000</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
                   <string>pcnet</string>
                  </property>
                 </item>
@@ -473,22 +509,52 @@
                   <string>virtio</string>
                  </property>
                 </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>lance</string>
+                 </property>
+                </item>
                </widget>
               </item>
-              <item row="5" column="0">
+              <item row="6" column="0">
                <widget class="QLabel" name="label_4">
                 <property name="text">
                  <string>Qemu Options:</string>
                 </property>
                </widget>
               </item>
-              <item row="5" column="1" colspan="2">
+              <item row="6" column="1" colspan="2">
                <widget class="QLineEdit" name="QemuOptions"/>
               </item>
-              <item row="6" column="0" colspan="2">
+              <item row="7" column="0" colspan="2">
                <widget class="QCheckBox" name="QemucheckBoxKVM">
                 <property name="text">
                  <string>Use KVM (Linux host only)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0" colspan="2">
+               <widget class="QCheckBox" name="QemucheckBoxUserMod">
+                <property name="text">
+                 <string>Add user network backend</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+                <property name="tristate">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="0" colspan="2">
+               <widget class="QCheckBox" name="QemucheckBoxMonitor">
+                <property name="text">
+                 <string>Monitor mode (pause and resume)</string>
                 </property>
                </widget>
               </item>
@@ -555,7 +621,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_5">
+     <widget class="QWidget" name="tabPIX">
       <attribute name="title">
        <string>PIX</string>
       </attribute>
@@ -570,7 +636,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>420</width>
+            <width>301</width>
             <height>525</height>
            </rect>
           </property>
@@ -581,98 +647,6 @@
               <string>PIX Settings</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_6">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_38">
-                <property name="text">
-                 <string>Identifier name:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1" colspan="2">
-               <widget class="QLineEdit" name="NamePIXImage"/>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_23">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="text">
-                 <string>Binary image:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="PIXImage">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QToolButton" name="PIXImage_Browser">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="text">
-                 <string>...</string>
-                </property>
-                <property name="toolButtonStyle">
-                 <enum>Qt::ToolButtonTextOnly</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_29">
-                <property name="text">
-                 <string>RAM:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1" colspan="2">
-               <widget class="QSpinBox" name="PIXMemory">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="suffix">
-                 <string> MiB</string>
-                </property>
-                <property name="minimum">
-                 <number>1</number>
-                </property>
-                <property name="maximum">
-                 <number>100000</number>
-                </property>
-                <property name="singleStep">
-                 <number>16</number>
-                </property>
-                <property name="value">
-                 <number>128</number>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QLabel" name="label_39">
-                <property name="text">
-                 <string>Number of NICs:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1" colspan="2">
-               <widget class="QSpinBox" name="PIXNICNb">
-                <property name="minimum">
-                 <number>0</number>
-                </property>
-                <property name="maximum">
-                 <number>100000</number>
-                </property>
-                <property name="singleStep">
-                 <number>1</number>
-                </property>
-                <property name="value">
-                 <number>6</number>
-                </property>
-               </widget>
-              </item>
               <item row="4" column="0">
                <widget class="QLabel" name="label_26">
                 <property name="text">
@@ -686,8 +660,13 @@
                  <bool>true</bool>
                 </property>
                 <property name="currentIndex">
-                 <number>5</number>
+                 <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>ne2k_pci</string>
@@ -715,11 +694,6 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>e1000</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
                   <string>pcnet</string>
                  </property>
                 </item>
@@ -728,12 +702,109 @@
                   <string>virtio</string>
                  </property>
                 </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
+                 </property>
+                </item>
                </widget>
               </item>
               <item row="5" column="0">
                <widget class="QLabel" name="label_8">
                 <property name="text">
                  <string>Qemu Options:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_38">
+                <property name="text">
+                 <string>Identifier name:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1" colspan="2">
+               <widget class="QLineEdit" name="NamePIXImage"/>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_23">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Binary image:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QToolButton" name="PIXImage_Browser">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="toolButtonStyle">
+                 <enum>Qt::ToolButtonTextOnly</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLineEdit" name="PIXImage">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_29">
+                <property name="text">
+                 <string>RAM:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_39">
+                <property name="text">
+                 <string>Number of NICs:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1" colspan="2">
+               <widget class="QSpinBox" name="PIXNICNb">
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>100000</number>
+                </property>
+                <property name="singleStep">
+                 <number>1</number>
+                </property>
+                <property name="value">
+                 <number>6</number>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1" colspan="2">
+               <widget class="QSpinBox" name="PIXMemory">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="suffix">
+                 <string> MiB</string>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>100000</number>
+                </property>
+                <property name="singleStep">
+                 <number>16</number>
+                </property>
+                <property name="value">
+                 <number>128</number>
                 </property>
                </widget>
               </item>
@@ -856,7 +927,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_3">
+     <widget class="QWidget" name="tabJunOS">
       <attribute name="title">
        <string>JunOS</string>
       </attribute>
@@ -871,8 +942,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>435</width>
-            <height>507</height>
+            <width>322</width>
+            <height>491</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -944,7 +1015,7 @@
                  <number>16</number>
                 </property>
                 <property name="value">
-                 <number>96</number>
+                 <number>512</number>
                 </property>
                </widget>
               </item>
@@ -984,8 +1055,13 @@
                  <bool>true</bool>
                 </property>
                 <property name="currentIndex">
-                 <number>5</number>
+                 <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>ne2k_pci</string>
@@ -1013,17 +1089,17 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>e1000</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
                   <string>pcnet</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
                   <string>virtio</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
                  </property>
                 </item>
                </widget>
@@ -1049,6 +1125,26 @@
                 </property>
                 <property name="text">
                  <string>Use KVM (Linux hosts only)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="0" colspan="2">
+               <widget class="QCheckBox" name="JunOScheckBoxUserMod">
+                <property name="text">
+                 <string>Add user network backend</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0" colspan="2">
+               <widget class="QCheckBox" name="JunOScheckBoxMonitor">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Monitor mode (pause and resume)</string>
                 </property>
                </widget>
               </item>
@@ -1115,7 +1211,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_2">
+     <widget class="QWidget" name="tabASA">
       <attribute name="title">
        <string>ASA</string>
       </attribute>
@@ -1130,35 +1226,79 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>420</width>
-            <height>549</height>
+            <width>460</width>
+            <height>633</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="0">
             <widget class="QGroupBox" name="groupBox_3">
              <property name="title">
               <string>ASA Settings</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_3">
               <item row="0" column="0">
+               <widget class="QLabel" name="label_47">
+                <property name="text">
+                 <string>Preconfiguration:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <item>
+                 <widget class="QComboBox" name="comboBoxASAPreconfiguration">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string>ASA 8.4(2)</string>
+                   </property>
+                  </item>
+                  <item>
+                   <property name="text">
+                    <string>ASA 8.0(2)</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButtonASAPreconfiguration">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>Apply</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="1" column="0">
                <widget class="QLabel" name="label_42">
                 <property name="text">
                  <string>Identifier name:</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
+              <item row="1" column="1">
                <widget class="QLineEdit" name="NameASAImage"/>
               </item>
-              <item row="1" column="0">
+              <item row="2" column="0">
                <widget class="QLabel" name="label_22">
                 <property name="text">
                  <string>RAM:</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
+              <item row="2" column="1">
                <widget class="QSpinBox" name="ASAMemory">
                 <property name="enabled">
                  <bool>true</bool>
@@ -1180,14 +1320,14 @@
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
+              <item row="3" column="0">
                <widget class="QLabel" name="label_43">
                 <property name="text">
                  <string>Number of NICs:</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="1">
+              <item row="3" column="1">
                <widget class="QSpinBox" name="ASANICNb">
                 <property name="minimum">
                  <number>0</number>
@@ -1203,21 +1343,26 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="0">
+              <item row="4" column="0">
                <widget class="QLabel" name="label_15">
                 <property name="text">
                  <string>NIC model:</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
+              <item row="4" column="1">
                <widget class="QComboBox" name="ASANIC">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
                 <property name="currentIndex">
-                 <number>5</number>
+                 <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>ne2k_pci</string>
@@ -1245,11 +1390,6 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>e1000</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
                   <string>pcnet</string>
                  </property>
                 </item>
@@ -1258,23 +1398,28 @@
                   <string>virtio</string>
                  </property>
                 </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
+                 </property>
+                </item>
                </widget>
               </item>
-              <item row="4" column="0">
+              <item row="5" column="0">
                <widget class="QLabel" name="label_12">
                 <property name="text">
                  <string>Qemu Options:</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="1">
+              <item row="5" column="1">
                <widget class="QLineEdit" name="ASAOptions">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
-              <item row="5" column="0" colspan="2">
+              <item row="6" column="0" colspan="2">
                <widget class="QCheckBox" name="ASAcheckBoxKVM">
                 <property name="enabled">
                  <bool>true</bool>
@@ -1284,10 +1429,30 @@
                 </property>
                </widget>
               </item>
+              <item row="7" column="0" colspan="2">
+               <widget class="QCheckBox" name="ASAcheckBoxUserMod">
+                <property name="text">
+                 <string>Add user network backend</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0" colspan="2">
+               <widget class="QCheckBox" name="ASAcheckBoxMonitor">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Monitor mode (pause and resume)</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </item>
-           <item>
+           <item row="1" column="0">
             <widget class="QGroupBox" name="groupBox_4">
              <property name="title">
               <string>ASA Specific Settings</string>
@@ -1350,7 +1515,7 @@
              </layout>
             </widget>
            </item>
-           <item>
+           <item row="2" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
               <widget class="QPushButton" name="SaveASAImage">
@@ -1381,7 +1546,7 @@
              </item>
             </layout>
            </item>
-           <item>
+           <item row="3" column="0">
             <widget class="QGroupBox" name="groupBox_12">
              <property name="title">
               <string>ASA Images</string>
@@ -1415,7 +1580,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_6">
+     <widget class="QWidget" name="tabIDS">
       <attribute name="title">
        <string>IDS</string>
       </attribute>
@@ -1430,11 +1595,11 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>435</width>
-            <height>507</height>
+            <width>331</width>
+            <height>524</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_8">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
             <widget class="QGroupBox" name="groupBox_9">
              <property name="title">
@@ -1570,8 +1735,13 @@
                  <bool>true</bool>
                 </property>
                 <property name="currentIndex">
-                 <number>5</number>
+                 <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>ne2k_pci</string>
@@ -1599,17 +1769,17 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>e1000</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
                   <string>pcnet</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
                   <string>virtio</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
                  </property>
                 </item>
                </widget>
@@ -1638,6 +1808,26 @@
                 </property>
                 <property name="text">
                  <string>Use KVM (Linux hosts only)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0" colspan="2">
+               <widget class="QCheckBox" name="IDScheckBoxUserMod">
+                <property name="text">
+                 <string>Add user network backend</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="0" colspan="2">
+               <widget class="QCheckBox" name="IDScheckBoxMonitor">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Monitor mode (pause and resume)</string>
                 </property>
                </widget>
               </item>
@@ -1696,6 +1886,328 @@
                 <column>
                  <property name="text">
                   <string>Image 2 path</string>
+                 </property>
+                </column>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tabAWP">
+      <attribute name="title">
+       <string>AW+</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_14">
+       <item>
+        <widget class="QScrollArea" name="scrollArea_4">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents_4">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>428</width>
+            <height>558</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="0">
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>AW+ Settings</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_3">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_47">
+                <property name="text">
+                 <string>Preconfiguration:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <item>
+                 <widget class="QComboBox" name="comboBoxAWPPreconfiguration">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string>Educational Release</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButtonAWPPreconfiguration">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>Apply</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_42">
+                <property name="text">
+                 <string>Profile name:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLineEdit" name="NameAWPImage"/>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_22">
+                <property name="text">
+                 <string>RAM:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSpinBox" name="AWPMemory">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="suffix">
+                 <string> MiB</string>
+                </property>
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>100000</number>
+                </property>
+                <property name="singleStep">
+                 <number>16</number>
+                </property>
+                <property name="value">
+                 <number>256</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="label_43">
+                <property name="text">
+                 <string>Number of NICs:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QSpinBox" name="AWPNICNb">
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>400</number>
+                </property>
+                <property name="singleStep">
+                 <number>1</number>
+                </property>
+                <property name="value">
+                 <number>6</number>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="label_15">
+                <property name="text">
+                 <string>NIC model:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QComboBox" name="AWPNIC">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="currentIndex">
+                 <number>0</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>virtio</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>virtio-net-pci</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>e1000</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>ne2k_pci</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>i82551</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>i82557b</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>i82559er</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>rtl8139</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>pcnet</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="label_12">
+                <property name="text">
+                 <string>Qemu Options:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QLineEdit" name="AWPOptions">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>-nodefaults -vnc none -vga none</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="0" colspan="2">
+               <widget class="QCheckBox" name="AWPcheckBoxKVM">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Use KVM (Linux hosts only)</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QGroupBox" name="groupBox_4">
+             <property name="title">
+              <string>AW+ Specific Settings</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_4">
+              <item row="0" column="2">
+               <widget class="QToolButton" name="AWPRel_Browser">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="toolButtonStyle">
+                 <enum>Qt::ToolButtonTextOnly</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>Kernel cmd line:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QLineEdit" name="AWPKernelCmdLine">
+                <property name="text">
+                 <string>root=/dev/ram0 releasefile=0.0.0-test.rel console=ttyS0,0 no_autorestart loglevel=1</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="AWPRel"/>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>AW+ Release file:</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QPushButton" name="SaveAWPImage">
+               <property name="text">
+                <string>&amp;Save</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="DeleteAWPImage">
+               <property name="text">
+                <string>&amp;Delete</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>217</width>
+                 <height>17</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item row="3" column="0">
+            <widget class="QGroupBox" name="groupBox_12">
+             <property name="title">
+              <string>AW+ Images</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_13">
+              <item>
+               <widget class="QTreeWidget" name="treeWidgetAWPImages">
+                <column>
+                 <property name="text">
+                  <string>Profile Name</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>Release File Path</string>
                  </property>
                 </column>
                </widget>

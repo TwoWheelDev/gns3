@@ -30,11 +30,11 @@ def debugmsg(level, message):
     if debuglevel >= level:
         print message
 
-import os, sys, time
+import sys, time, math, os
 import GNS3.Globals as globals
 import GNS3.Dynagen.dynamips_lib as lib
 import GNS3.UndoFramework as undo
-from PyQt4 import QtCore, QtGui, QtSvg
+from PyQt4 import QtCore, QtGui, QtSvg, Qt
 from GNS3.Topology import Topology
 from GNS3.Utils import translate, debug
 from GNS3.Annotation import Annotation
@@ -48,14 +48,17 @@ from GNS3.NodeConfigurator import NodeConfigurator
 from GNS3.Node.AbstractNode import AbstractNode
 from GNS3.Globals.Symbols import SYMBOLS, SYMBOL_TYPES
 from GNS3.Node.IOSRouter import IOSRouter
-from GNS3.Node.AnyEmuDevice import AnyEmuDevice, PIX
+from GNS3.Node.AnyEmuDevice import AnyEmuDevice
 from GNS3.Node.AnyVBoxEmuDevice import AnyVBoxEmuDevice
 from GNS3.Node.FRSW import FRSW
 from GNS3.Node.ATMSW import ATMSW
 from GNS3.Node.ETHSW import ETHSW
 from GNS3.Node.ATMBR import ATMBR
+from GNS3.Node.Hub import Hub
 from GNS3.Link.Ethernet import Ethernet
 from GNS3.Link.Serial import Serial
+from GNS3.DragDropMultipleDevicesDialog import DragDropMultipleDevicesDialog
+#from GNS3.Ui.Form_DragAndDropMultiDevices import Ui_DragDropMultipleDevices
 
 class Scene(QtGui.QGraphicsView):
     """ Scene class
@@ -76,6 +79,7 @@ class Scene(QtGui.QGraphicsView):
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self.setTransformationAnchor(self.AnchorUnderMouse)
         self.setResizeAnchor(self.AnchorViewCenter)
+        #self.setDragMode(QtGui.QGraphicsView.ScrollHandDrag) #FIXME
 
         self.newedge = None
         self.resetAddingLink()
@@ -83,8 +87,6 @@ class Scene(QtGui.QGraphicsView):
 
         self.sceneDragging = False
         self.lastMousePos = None
-        
-        self.showWarningMessageBackgroundLayer = True
 
     def reloadRenderers(self):
         """ Load all needed renderers
@@ -135,11 +137,17 @@ class Scene(QtGui.QGraphicsView):
             showHostnameAct.setIcon(QtGui.QIcon(":/icons/show-hostname.svg"))
             self.connect(showHostnameAct, QtCore.SIGNAL('triggered()'), self.slotShowHostname)
 
+            # Action: AddLink (To add a link)
+            addLinkAct = QtGui.QAction(translate('Scene', 'Add a link'), menu)
+            addLinkAct.setIcon(QtGui.QIcon(":/icons/connection.svg"))
+            self.connect(addLinkAct, QtCore.SIGNAL('triggered()'), self.addLink)
+
             menu.addAction(configAct)
             menu.addAction(showHostnameAct)
             menu.addAction(changeHostnameAct)
+            menu.addAction(addLinkAct)
 
-        instances = map(lambda item: isinstance(item, ETHSW) or isinstance(item, ATMSW) or isinstance(item, ATMBR) or isinstance(item, FRSW), items)
+        instances = map(lambda item: isinstance(item, ETHSW) or isinstance(item, Hub) or isinstance(item, ATMSW) or isinstance(item, ATMBR) or isinstance(item, FRSW), items)
         if True in instances:
 
             # Action: ChangeHypervisor (Change the hypervisor)
@@ -206,7 +214,7 @@ class Scene(QtGui.QGraphicsView):
                 displayWindowHideAct.setIcon(QtGui.QIcon(':/symbols/computer.normal.svg'))
                 self.connect(displayWindowHideAct, QtCore.SIGNAL('triggered()'), self.slotDisplayWindowHide)
                 menu.addAction(displayWindowHideAct)
-                
+
             # Action: Change the console port
             consolePortAct = QtGui.QAction(translate('Scene', 'Change console port'), menu)
             consolePortAct.setIcon(QtGui.QIcon(':/icons/console_port.svg'))
@@ -235,7 +243,7 @@ class Scene(QtGui.QGraphicsView):
 
             menu.addAction(startAct)
 
-        instances = map(lambda item: isinstance(item, IOSRouter) or isinstance(item, AnyVBoxEmuDevice), items)
+        instances = map(lambda item: isinstance(item, IOSRouter) or isinstance(item, AnyEmuDevice) or isinstance(item, AnyVBoxEmuDevice), items)
         if True in instances:
 
             # Action: Suspend / Pause (Suspend IOS on hypervisor/pause VM)
@@ -270,7 +278,7 @@ class Scene(QtGui.QGraphicsView):
             self.connect(auxPortAct, QtCore.SIGNAL('triggered()'), self.slotChangeAUXPort)
 
             # Action: Console (Connect to the node console)
-            AuxAct = QtGui.QAction(translate('Scene', 'Console to AUX port'), menu)
+            AuxAct = QtGui.QAction(translate('Scene', 'Console via AUX port'), menu)
             AuxAct.setIcon(QtGui.QIcon(':/icons/aux-console.svg'))
             self.connect(AuxAct, QtCore.SIGNAL('triggered()'), self.slotAuxConsole)
 
@@ -358,6 +366,12 @@ class Scene(QtGui.QGraphicsView):
         """
 
         self.__topology.addNodeFromScene(node)
+        
+    def addLink(self):
+        """ Call add a link action
+        """
+        
+        globals.GApp.workspace.startAction_addLink()
 
     def calculateIDLEPC(self, router):
         """ Show a splash screen
@@ -376,7 +390,7 @@ class Scene(QtGui.QGraphicsView):
 
         for item in self.__topology.selectedItems():
             if isinstance(item, ETHSW):
-                table = MACTableDialog(item, globals.GApp.mainWindow)
+                table = MACTableDialog(item)
                 table.show()
                 table.exec_()
 
@@ -488,9 +502,6 @@ class Scene(QtGui.QGraphicsView):
         except lib.DynamipsError, msg:
             QtGui.QMessageBox.critical(self, translate("Scene", "Dynamips error"),  unicode(msg))
             return
-        except lib.DynamipsErrorHandled:
-            QtGui.QMessageBox.critical(self, translate("Scene", "Dynamips error"), translate("Scene", "Connection lost"))
-            return
 
         # remove the '100-OK' line
         result.pop()
@@ -547,7 +558,7 @@ class Scene(QtGui.QGraphicsView):
 
         for item in self.__topology.selectedItems():
             if isinstance(item, ETHSW) or isinstance(item, ATMSW) or \
-                isinstance(item, ATMBR) or isinstance(item, FRSW):
+                isinstance(item, ATMBR) or isinstance(item, FRSW) or isinstance(item, Hub):
                 item.changeHypervisor()
 
     def slotShowHostname(self):
@@ -579,9 +590,6 @@ class Scene(QtGui.QGraphicsView):
         ok_to_delete_node = True
         for item in self.__topology.selectedItems():
             if not isinstance(item, Annotation) and not isinstance(item, Pixmap) and not isinstance(item, AbstractShapeItem):
-                # forced stop for Qemu based devices (Qemuwrapper doesn't support hot link removal)
-                #if isinstance(item, AnyEmuDevice):
-                #    item.stopNode()
                 for link in item.getEdgeList().copy():
                     if self.__topology.deleteLinkFromScene(link) == False:
                         if ok_to_delete_node:
@@ -597,6 +605,7 @@ class Scene(QtGui.QGraphicsView):
         """ Lower Z value
         """
 
+        show_message = True
         for item in self.__topology.selectedItems():
             zvalue = item.zValue()
             if zvalue > 0:
@@ -606,9 +615,9 @@ class Scene(QtGui.QGraphicsView):
                 # shape items, annotations and pictures can have a z value lower than 0
                 command = undo.NewZValue(item, zvalue - 1)
                 self.__topology.undoStack.push(command)
-                if zvalue == 0 and self.showWarningMessageBackgroundLayer:
+                if zvalue == 0 and show_message:
                     QtGui.QMessageBox.information(globals.GApp.mainWindow, translate("Scene", "Layer position"),  translate("Scene", "Object moved to a background layer. You will now have to use the right-click action to select this object in the future and raise it to layer 0 to be able to move it"))
-                    self.showWarningMessageBackgroundLayer = False
+                    show_message = False
 
     def slotraiseZValue(self):
         """ Raise Z value
@@ -646,18 +655,17 @@ class Scene(QtGui.QGraphicsView):
         """
 
         for item in self.__topology.selectedItems():
-            if isinstance(item, IOSRouter) or (isinstance(item, AnyEmuDevice) and not isinstance(item, PIX)) or isinstance(item, AnyVBoxEmuDevice):
+            if isinstance(item, IOSRouter) or isinstance(item, AnyEmuDevice) or isinstance(item, AnyVBoxEmuDevice):
                 links = []
                 for localif in item.getConnectedInterfaceList():
                     linkobj = item.getConnectedLinkByName(localif)
                     (neighbor, neighborif) = linkobj.getConnectedNeighbor(item)
                     links.append("%s connected to %s %s" % (localif, neighbor.hostname, neighborif))
-                if len(links):
-                    (selection,  ok) = QtGui.QInputDialog.getItem(globals.GApp.mainWindow, translate("Scene", "Capture"), translate("Scene", "Please choose a link"), links, 0, False)
-                    if ok:
-                        interface = unicode(selection).split(' ')[0]
-                        linkobj = item.getConnectedLinkByName(interface)
-                        linkobj.startCapture()
+                (selection,  ok) = QtGui.QInputDialog.getItem(globals.GApp.mainWindow, translate("Scene", "Capture"), translate("Scene", "Please choose a link"), links, 0, False)
+                if ok:
+                    interface = unicode(selection).split(' ')[0]
+                    linkobj = item.getConnectedLinkByName(interface)
+                    linkobj.startCapture()
 
     def slotDisplayWindowFocus(self):
         """ Slot called to bring VM's display as foreground window and focus on it
@@ -741,7 +749,7 @@ class Scene(QtGui.QGraphicsView):
         """
 
         for item in self.__topology.selectedItems():
-            if  isinstance(item, IOSRouter) or isinstance(item, AnyVBoxEmuDevice):
+            if isinstance(item, IOSRouter) or isinstance(item, AnyEmuDevice) or isinstance(item, AnyVBoxEmuDevice):
                 item.suspendNode()
 
     def slotReloadNode(self):
@@ -810,13 +818,15 @@ class Scene(QtGui.QGraphicsView):
         node = self.__topology.getNode(id)
 
         if globals.currentLinkType == globals.Enum.LinkType.Serial or globals.currentLinkType == globals.Enum.LinkType.ATM or globals.currentLinkType == globals.Enum.LinkType.POS:
-            if isinstance(node, AnyEmuDevice) or isinstance(node, AnyVBoxEmuDevice) or isinstance(node, ETHSW):
+            if isinstance(node, AnyEmuDevice) or isinstance(node, AnyVBoxEmuDevice) or isinstance(node, ETHSW) or isinstance(node, Hub):
                 if isinstance(node, AnyEmuDevice):
                     QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Scene", "AddLink"),  translate("Scene", "Qemu machines support only Ethernet links."))
                 if isinstance(node, AnyVBoxEmuDevice):
                     QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Scene", "AddLink"),  translate("Scene", "VirtualBox machines support only Ethernet links."))
                 if isinstance(node, ETHSW):
                     QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Scene", "AddLink"),  translate("Scene", "Ethernet switch supports only Ethernet links."))
+                if isinstance(node, Hub):
+                    QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Scene", "AddLink"),  translate("Scene", "Ethernet hub supports only Ethernet links."))
                 self.__isFirstClick = True
                 return
 
@@ -874,7 +884,7 @@ class Scene(QtGui.QGraphicsView):
         """
 
         factor = self.matrix().scale(scale_factor, scale_factor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
-        if (factor < 0.20 or factor > 5):
+        if (factor < 0.10 or factor > 10):
             return
         self.scale(scale_factor, scale_factor)
 
@@ -882,8 +892,13 @@ class Scene(QtGui.QGraphicsView):
         """ Zoom or scroll with the mouse wheel
         """
 
-        if event.orientation() == QtCore.Qt.Vertical:
+        if globals.GApp.workspace.action_DisableMouseWheel.isChecked() == False and \
+        (globals.GApp.workspace.action_ZoomUsingMouseWheel.isChecked() or event.modifiers() == QtCore.Qt.ControlModifier) and \
+        event.orientation() == QtCore.Qt.Vertical:
             self.scaleView(pow(2.0, event.delta() / 240.0))
+
+        elif globals.GApp.workspace.action_DisableMouseWheel.isChecked() == False:
+            QtGui.QGraphicsView.wheelEvent(self, event)
 
     def keyPressEvent(self, event):
         """ key press handler
@@ -938,6 +953,7 @@ class Scene(QtGui.QGraphicsView):
                     break
             event.acceptProposedAction()
         elif event.mimeData().hasText():
+
             symbolname = str(event.mimeData().text())
             # Get resource corresponding to node type
             object = None
@@ -947,28 +963,65 @@ class Scene(QtGui.QGraphicsView):
                     renderer_select = self.renders[symbolname]['selected']
                     object = item['object']
                     break
+                    
+            # If SHIFT key is pressed, launch the multi-drop feature
+            if event.keyboardModifiers () == QtCore.Qt.ShiftModifier:
+                dialog = DragDropMultipleDevicesDialog()
+                dialog.exec_()
+            else:
+                dialog = None
 
-            if object == None:
-                return
-            node = object(renderer_normal, renderer_select)
-            node.type = item['name']
-            if SYMBOL_TYPES[item['object']] != item['name']:
-                node.default_symbol = False
-            node.setPos(self.mapToScene(event.pos()))
+            if dialog is not None:
+                nbOfDevices = DragDropMultipleDevicesDialog.getNbOfDevices(dialog)
+                arrangement = DragDropMultipleDevicesDialog.getArrangement(dialog)
+            else:
+                nbOfDevices = 1
+                arrangement = None
+            
+            # Define the radius of the circle to be drawn when multiple-dropping devices
+            radius = nbOfDevices * 35
+            # Max number of devices on a single line
+            maxDevPerLine = 5
+            # Spacing between elements
+            offset = 100
+            
+            for i in range(nbOfDevices):
+            
+                if object == None:
+                    return
+                node = object(renderer_normal, renderer_select)
+                node.type = item['name']
+                if SYMBOL_TYPES[item['object']] != item['name']:
+                    node.default_symbol = False
+                node.setPos(self.mapToScene(event.pos()))
 
-            if globals.GApp.workspace.flg_showHostname == True:
-                node.showHostname()
+                if globals.GApp.workspace.flg_showHostname == True:
+                    node.showHostname()
+            
+                self.__topology.addNodeFromScene(node)
 
-            self.__topology.addNodeFromScene(node)
+                # Compute circle or line(s) arrangement
+                if arrangement is not None:
+                    if arrangement == "Circle":
+                        # Determine center of the node (or set of nodes)
+                        x_center = node.pos().x() - (node.boundingRect().width() / 2)
+                        y_center = node.pos().y() - (node.boundingRect().height() / 2)
+                        period = math.pi + ((2 * math.pi / nbOfDevices) * i)
+                        pos_x = radius * math.cos(period) + x_center
+                        pos_y = radius * math.sin(period) + y_center
+                    elif arrangement == "Line":
+                        pos_x = node.pos().x() - (node.boundingRect().width() / 2) + (i % maxDevPerLine) * offset
+                        pos_y = node.pos().y() - (node.boundingRect().height() / 2) + (i / maxDevPerLine) * offset
+                else:
+                    pos_x = node.pos().x() - (node.boundingRect().width() / 2)
+                    pos_y = node.pos().y() - (node.boundingRect().height() / 2)
+                
+                # Set node position on the scene
+                node.setPos(pos_x, pos_y)
 
-            # Center the node
-            pos_x = node.pos().x() - (node.boundingRect().width() / 2)
-            pos_y = node.pos().y() - (node.boundingRect().height() / 2)
-            node.setPos(pos_x, pos_y)
+                event.setDropAction(QtCore.Qt.MoveAction)
+                event.accept()
 
-            event.acceptProposedAction()
-            #event.setDropAction(QtCore.Qt.MoveAction)
-            #event.accept()
         else:
             event.ignore()
 
@@ -976,7 +1029,7 @@ class Scene(QtGui.QGraphicsView):
         """ Call when the node is clicked
             event: QtGui.QGraphicsSceneMouseEvent instance
         """
-
+        
         show = True
         item = self.itemAt(event.pos())
 
@@ -994,7 +1047,12 @@ class Scene(QtGui.QGraphicsView):
             return
 
         if show and event.modifiers() & QtCore.Qt.ShiftModifier and event.button() == QtCore.Qt.LeftButton and item and not globals.addingLinkFlag:
-            item.setSelected(True)
+#            if isinstance(item, AbstractShapeItem) or isinstance(item, Annotation) or isinstance(item, Pixmap):
+#                item.setFlag(item.ItemIsSelectable, True)
+            if item.isSelected():
+                item.setSelected(False)
+            else:
+                item.setSelected(True)
         elif show and event.button() == QtCore.Qt.RightButton and not globals.addingLinkFlag:
             if item:
                 #Prevent right clicking on a selected item from de-selecting all other items
@@ -1050,26 +1108,28 @@ class Scene(QtGui.QGraphicsView):
             this means the user is no longer trying to drag the scene
         """
 
+        item = self.itemAt(event.pos())
+        
         if self.sceneDragging and not event.buttons() == (QtCore.Qt.LeftButton | QtCore.Qt.RightButton) and not event.buttons() & QtCore.Qt.MidButton:
             self.sceneDragging = False
             globals.GApp.scene.setCursor(QtCore.Qt.ArrowCursor)
         else:
+            if item is not None and not event.modifiers() & QtCore.Qt.ShiftModifier:
+                item.setSelected(True)
+                #for other_item in self.__topology.selectedItems():
+                #    other_item.setSelected(False)
             QtGui.QGraphicsView.mouseReleaseEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
 
         item = self.itemAt(event.pos())
+        #print "ADEBUG: Scene.py: globals.addingLinkFlag = ", globals.addingLinkFlag
         if not globals.addingLinkFlag and isinstance(item, AbstractNode):
             item.setSelected(True)
             if (isinstance(item, IOSRouter) or isinstance(item, AnyEmuDevice)) and item.isStarted():
                 self.slotConsole()
             elif isinstance(item, AnyVBoxEmuDevice) and (item.isStarted() or item.isSuspended()) and not globals.addingLinkFlag:
-                if item.get_config()['console_support']:
-                    self.slotConsole()
-                elif item.get_config()['headless_mode']:
-                    print translate("Scene", "Warning, you are using headless mode without console support")
-                else:
-                    self.slotDisplayWindowFocus()
+                self.slotDisplayWindowFocus()
             else:
                 self.slotConfigNode()
         else:

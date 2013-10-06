@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 
 """
 portTracker_lib.py
@@ -33,17 +32,21 @@ class portTracker:
     tcptrack['localhost'] = []
     udptrack['localhost'] = []
     local_addresses = ['0.0.0.0', '127.0.0.1', 'localhost', '::1', '0:0:0:0:0:0:0:1']
+    local_addresses.append(socket.gethostname())
     try:
-        local_addresses.append(socket.gethostname())
         local_addresses.append(socket.gethostbyname(socket.gethostname()))
     except:
-        pass
+        # Dumb admin?
+        print "WARNING: Your host file miss an entry for " + socket.gethostname()
 
     def addLocalAddress(self, addr):
 
-        debug("registering additional local address %s" % addr)
-        if addr not in self.local_addresses:
-            self.local_addresses.append(addr)
+        try:
+            debug("registering additional local address %s" % addr)
+            if addr not in self.local_addresses:
+                self.local_addresses.append(addr)
+        except:
+            pass
 
     def getNotAvailableTcpPortRange(self, host, start_port, max_port=10):
 
@@ -132,16 +135,20 @@ class portTracker:
         if host in self.local_addresses:
             host = 'localhost'
         if self.tcptrack.has_key(host) and port in self.tcptrack[host]:
-            return False
-        if not self.getAvailableTcpPort(host, port, 0):
-            return False
+            # workaround, let's say the port is free to use
+            debug("freeing port (already allocated) %i" % port)
+            self.tcptrack[host].remove(port)
+            #return False
+        # forced to do this as sometimes the port of a (just) closed application is not considered free
+        #if not self.getAvailableTcpPort(host, port, 0):
+        #    return False
         return True
 
     def freeTcpPort(self, host, port):
 
         if host in self.local_addresses:
             host = 'localhost'
-        if self.tcptrack.has_key(host) and port in self.tcptrack[host] and not self.tcpPortIsFree(host, port):
+        if self.tcptrack.has_key(host) and port in self.tcptrack[host]:# and not self.tcpPortIsFree(host, port):
             debug("freeing port %i" % port)
             self.tcptrack[host].remove(port)
         else:

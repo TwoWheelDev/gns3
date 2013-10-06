@@ -29,7 +29,7 @@ except:
     sys.stderr.write("Can't set default encoding to utf-8\n")
 
 # current version of GNS3
-VERSION = "0.8.3"
+VERSION = "0.8.5"
 
 try:
     from PyQt4 import QtCore, QtGui
@@ -55,7 +55,7 @@ def exceptionHook(type, value, tb):
     try:
         curdate = time.strftime("%d %b %Y %H:%M:%S")
     	logfile = open('exception.log','a')
-        logfile.write("========= GNS3 " + VERSION + " traceback on " + curdate + " =========\n")
+        logfile.write("=== GNS3 " + VERSION + " traceback on " + curdate + " ===\n")
     	logfile.write("\n" . join(lines))
     	logfile.close()
     except:

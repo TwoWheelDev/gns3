@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -31,12 +30,13 @@ from GNS3.Node.IOSRouter3600 import IOSRouter3600
 from GNS3.Node.IOSRouter3700 import IOSRouter3700
 from GNS3.Node.IOSRouter7200 import IOSRouter7200
 from GNS3.Node.DecorativeNode import DecorativeNode
-from GNS3.Node.AnyEmuDevice import PIX, ASA, JunOS, IDS, QemuDevice
+from GNS3.Node.AnyEmuDevice import PIX, ASA, AWP, JunOS, IDS, QemuDevice
 from GNS3.Node.AnyVBoxEmuDevice import VBoxDevice
 from GNS3.Node.FRSW import FRSW
 from GNS3.Node.ETHSW import ETHSW
 from GNS3.Node.ATMSW import ATMSW
 from GNS3.Node.ATMBR import ATMBR
+from GNS3.Node.Hub import Hub
 from GNS3.Node.Cloud import Cloud
 
 class ConfigurationPageItem(QtGui.QTreeWidgetItem):
@@ -102,7 +102,7 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
             # The dialog module must have the module function create to create
             # the configuration page. This must have the method save to save
             # the settings.
-            "Routers (1700)" : \
+            "Routers (1700)": \
                 [translate("NodeConfigurator", "Routers c1700"), ":/symbols/router.normal.svg",
                  "Page_IOSRouter", None, None],
             "Routers (2600)" : \
@@ -129,6 +129,9 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
             "ASA":
                  [translate("NodeConfigurator", "ASA firewalls"), ":/symbols/PIX_firewall.normal.svg",
                   "Page_ASA", None, None],
+            "AWP":
+                 [translate("NodeConfigurator", "AW+ router"), ":/symbols/router.normal.awp.svg",
+                  "Page_AWP", None, None],
             "JunOS":
                   [translate("NodeConfigurator", "Juniper routers"), ":/symbols/router.normal.svg",
                    "Page_JunOS", None, None],
@@ -147,6 +150,9 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
             "ETHSW":
                 [translate("NodeConfigurator", "Ethernet switches"), ":/symbols/ethernet_switch.normal.svg",
                  "Page_ETHSW", None, None],
+            "Hub":
+                [translate("NodeConfigurator", "Ethernet hubs"), ":/symbols/hub.normal.svg",
+                 "Page_Hub", None, None],
             "ATMSW":
                 [translate("NodeConfigurator", "ATM switches"), ":/symbols/atm_switch.normal.svg",
                  "Page_ATMSW", None, None],
@@ -168,6 +174,7 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
                                      DecorativeNode: "Decorative Nodes",
                                      PIX: "PIX",
                                      ASA: "ASA",
+                                     AWP: "AWP",
                                      JunOS: "JunOS",
                                      IDS: "IDS",
                                      QemuDevice: "Qemu",
@@ -176,6 +183,7 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
                                      ETHSW: "ETHSW",
                                      ATMSW: "ATMSW",
                                      ATMBR: "ATMBR",
+                                     Hub: "Hub",
                                      Cloud: "Clouds",
                                     }
         self.__loadNodeItems()
@@ -230,7 +238,7 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
 
         last_item = items[count - 1]
         self.__showConfigurationPage(last_item,  0)
-        lasttype =  type(globals.GApp.topology.getNode(last_item.getIDs()[0]))
+        lasttype = type(globals.GApp.topology.getNode(last_item.getIDs()[0]))
 
         for item in items:
             itmtype = type(globals.GApp.topology.getNode(item.getIDs()[0]))
@@ -248,7 +256,7 @@ class NodeConfigurator(QtGui.QDialog, Ui_NodeConfigurator):
         if count > 1:
             pageTitle = translate("NodeConfigurator", "Group of %d %s") % (count, unicode(last_item.parent().text(0)))
         else:
-            pageTitle = translate("NodeConfigurator", "%s node") % (unicode(last_item.text(0)) )
+            pageTitle = translate("NodeConfigurator", "%s node") % (unicode(last_item.text(0)))
         self.titleLabel.setText(pageTitle)
 
     def __importConfigurationPage(self, name):
