@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -60,7 +59,12 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
         flags = self.ItemIsMovable | self.ItemIsSelectable | self.ItemIsFocusable
         # necessary to receive itemChange() notifications with Qt >= 4.6
         if QtCore.QT_VERSION >= 0x040600:
-            flags = flags | self.ItemSendsGeometryChanges
+            try:
+                flags = flags | self.ItemSendsGeometryChanges
+            except AttributeError:
+                # Forced to do this on CentOS, for an unknown reason, Qt doesn't support ItemSendsGeometryChanges even if version >= 4.6
+                # This is very likely that the topology will break apart if not supported!
+                pass
         self.setFlags(flags)
         self.setAcceptsHoverEvents(True)
         self.setSharedRenderer(self.__render_normal)
@@ -80,19 +84,25 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
     def __del__(self):
 
         if globals.GApp.systconf['general'].term_close_on_delete:
-            # closing terminal programs
-            for console in self.consoleProcesses:
-                console.poll()
-                if console.returncode == None:
-                    # the process hasn't returned yet (still active)
-                    debug("Sending terminate signal to terminal program (pid %i)" % console.pid)
-                    try:
-                        console.terminate()
-                    except:
-                        debug("Error while sending the signal to terminal program (pid %i)" % console.pid)
-                        continue
+            self.closeAllConsoles()
+
+    def closeAllConsoles(self):
+        """ Close all opened terminal programs
+        """
+
+        # closing terminal programs
+        for console in self.consoleProcesses:
+            console.poll()
+            if console.returncode == None:
+                # the process hasn't returned yet (still active)
+                debug("Sending terminate signal to terminal program (pid %i)" % console.pid)
+                try:
+                    console.terminate()
+                except:
+                    debug("Error while sending the signal to terminal program (pid %i)" % console.pid)
+                    continue
         self.consoleProcesses = []
-        
+
     def clearClosedConsoles(self):
         """ Refresh the list of opened terminal programs.
         """
@@ -146,9 +156,15 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
                                           self.hostname)
         if ok and text:
             text = unicode(text)
-            if not re.search(r"""^[\w,.-\[\]]*$""", text, re.UNICODE):
+            if not re.search(r"""^[\w,.\-\[\]]*$""", text, re.UNICODE):
                 QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AbstractNode", "Hostname"),
                                            translate("AbstractNode", "Please use only alphanumeric characters"))
+                self.changeHostname()
+                return
+            
+            if text.lower() == 'lan':
+                QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AbstractNode", "Hostname"),
+                                           translate("AbstractNode", "Please choose another hostname.\n%s is used by Dynagen to specify bridged networks.") % text)
                 self.changeHostname()
                 return
 
@@ -301,9 +317,14 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
         """
 
         # update tool tip
-        self.setCustomToolTip()
+        try:
+            self.setCustomToolTip()
+        except:
+            print translate("AbstractNode", "Cannot communicate with %s, the server running this node may have crashed!" % self.hostname)
         if not self.isSelected() and self.__render_select:
             self.setSharedRenderer(self.__render_select)
+#            if not globals.addingLinkFlag:
+#                globals.GApp.scene.setCursor(QtCore.Qt.OpenHandCursor)
 
     def hoverLeaveEvent(self, event):
         """ Called when the mouse leaves the node
@@ -311,6 +332,8 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
 
         if not self.isSelected() and self.__render_select:
             self.setSharedRenderer(self.__render_normal)
+#            if not globals.addingLinkFlag:
+#                globals.GApp.scene.setCursor(QtCore.Qt.ArrowCursor)
 
     def addEdge(self, edge):
         """ Save the edge
@@ -358,7 +381,7 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
 
         if globals.workaround_ManualLink == True:
             # We're not the right recipient of this event,
-            # so acknownledge the workaround and return
+            # so acknowledge the workaround and return
             globals.workaround_ManualLink = False
             return
 
@@ -371,8 +394,15 @@ class AbstractNode(QtSvg.QGraphicsSvgItem):
                     QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AbstractNode", "Connection"),  translate("AbstractNode", "Already connected interface") )
                     return
                 self.emit(QtCore.SIGNAL("Add link"), self.id,  self.__selectedInterface)
-
+#        elif event.button() == QtCore.Qt.LeftButton:
+#            globals.GApp.scene.setCursor(QtCore.Qt.ClosedHandCursor)
         QtSvg.QGraphicsSvgItem.mousePressEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+
+#        if not globals.addingLinkFlag:
+#            globals.GApp.scene.setCursor(QtCore.Qt.OpenHandCursor)
+        QtGui.QGraphicsItem.mouseReleaseEvent(self, event)
 
     def getConnectedInterfaceList(self):
         """ Returns a list of all the connected local interfaces

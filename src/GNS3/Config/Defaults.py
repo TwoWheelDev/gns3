@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -41,6 +40,16 @@ elif os.environ.has_key("TMP"):
 else:
     DYNAMIPS_DEFAULT_WORKDIR = unicode('/tmp')
 
+if sys.platform.startswith('darwin'):
+    if hasattr(sys, "frozen"):
+        BASECONFIG_DIR = os.getcwdu() + os.sep + '../Resources/'
+    else:
+        BASECONFIG_DIR = '' 
+elif sys.platform.startswith('win'):
+    BASECONFIG_DIR = ''
+else:
+    BASECONFIG_DIR = '/usr/local/share/examples/gns3/'
+
 # Default path to qemuwrapper
 if sys.platform.startswith('win'):
     QEMUWRAPPER_DEFAULT_PATH = unicode('qemuwrapper.exe')
@@ -52,9 +61,9 @@ else:
     if os.path.exists(qemuwrapper_path):
         QEMUWRAPPER_DEFAULT_PATH = qemuwrapper_path
     elif platform.system() == 'Linux':
-        QEMUWRAPPER_DEFAULT_PATH = unicode("/usr/lib/gns3/qemuwrapper.py")
+        QEMUWRAPPER_DEFAULT_PATH = unicode("/usr/share/gns3/qemuwrapper.py")
     else:
-        QEMUWRAPPER_DEFAULT_PATH = unicode("/usr/local/libexec/gns3/qemuwrapper.py") # libexec is standard on BSD platforms
+        QEMUWRAPPER_DEFAULT_PATH = unicode("/usr/local/libexec/gns3/qemuwrapper.py")
 
 # Default path to qemuwrapper working directory
 if os.environ.has_key("TEMP"):
@@ -66,11 +75,19 @@ else:
 
 # Default paths to Qemu and qemu-img
 if sys.platform.startswith('win'):
-    QEMU_DEFAULT_PATH = unicode('qemu')
-    QEMU_IMG_DEFAULT_PATH = unicode('qemu-img')
+    if os.path.exists('Qemu\qemu-system-i386w.exe'):
+        QEMU_DEFAULT_PATH = unicode('Qemu\qemu-system-i386w.exe')
+        QEMU_IMG_DEFAULT_PATH = unicode('Qemu\qemu-img.exe')
+    else:
+        # For now we ship Qemu 0.11.0 in the all-in-one
+        QEMU_DEFAULT_PATH = unicode('qemu.exe') 
+        QEMU_IMG_DEFAULT_PATH = unicode('qemu-img.exe')
+elif sys.platform.startswith('darwin') and hasattr(sys, "frozen"):
+        QEMU_DEFAULT_PATH = os.getcwdu() + os.sep + '../Resources/Qemu-0.11.0/bin/qemu'
+        QEMU_IMG_DEFAULT_PATH = os.getcwdu() + os.sep + '../Resources/Qemu-0.11.0/bin/qemu-img'
 else:
-    QEMU_DEFAULT_PATH = unicode('qemu-system-i386')
     QEMU_IMG_DEFAULT_PATH = unicode('qemu-img')
+    QEMU_DEFAULT_PATH = unicode('qemu')
 
 # Default path to vboxwrapper
 if sys.platform.startswith('win'):
@@ -83,9 +100,9 @@ else:
     if os.path.exists(qemuwrapper_path):
         VBOXWRAPPER_DEFAULT_PATH = vboxwrapper_path
     elif platform.system() == 'Linux':
-        QEMUWRAPPER_DEFAULT_PATH = unicode("/usr/lib/gns3/vboxwrapper.py")
+        VBOXWRAPPER_DEFAULT_PATH = unicode("/usr/share/gns3/vboxwrapper.py")
     else:
-        VBOXWRAPPER_DEFAULT_PATH = unicode("/usr/local/libexec/gns3/vboxwrapper.py") # libexec is standard on BSD platforms
+        VBOXWRAPPER_DEFAULT_PATH = unicode("/usr/local/libexec/gns3/vboxwrapper.py")
 
 # Default path to vboxwrapper working directory
 if os.environ.has_key("TEMP"):
@@ -168,46 +185,55 @@ else:
 if platform.system() == 'Linux' or platform.system().__contains__("BSD"):
     TERMINAL_PRESET_CMDS = {
                             'xterm (Linux/BSD)': 'xterm -T %d -e \'telnet %h %p\' >/dev/null 2>&1 &',
-                            'Putty (Linux/BSD)': 'putty -telnet %h %p',
+                            'Putty (Linux/BSD)': 'putty -telnet %h %p -title %d -sl 2500 -fg SALMON1 -bg BLACK',
                             'Gnome Terminal (Linux/BSD)': 'gnome-terminal -t %d -e \'telnet %h %p\' >/dev/null 2>&1 &',
-                            'KDE Konsole (Linux/BSD)': '/usr/bin/konsole --new-tab -p tabtitle=%d -e telnet %h %p >/dev/null 2>&1 &'
+                            'KDE Konsole (Linux/BSD)': 'konsole --new-tab -p tabtitle=%d -e telnet %h %p >/dev/null 2>&1 &',
+                            'SecureCRT (Linux)': 'SecureCRT /T /N "%d"  /TELNET %h %p',
+                            'Mate Terminal (Linux Mint)': 'mate-terminal --tab -e \'telnet %h %p\'  -t %d >/dev/null 2>&1 & ',
                             }
-elif platform.system() == 'Windows'  and os.path.exists("C:\Program Files (x86)\\"):
+elif platform.system() == 'Windows' and os.path.exists("C:\Program Files (x86)\\"):
     TERMINAL_PRESET_CMDS = {
-                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt %d -gns3 5',
-                            'SecureCRT (Windows 64-bit)': '"C:\Program Files (x86)\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
-                            'SecureCRT (Windows 32-bit)': '"C:\Program Files\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
-                            'TeraTerm (Windows 64-bit)': '"C:\Program Files (x86)\\teraterm\\ttermpro.exe" /W=%d /T=1 %h %p',
-                            'TeraTerm (Windows 32-bit)': '"C:\Program Files\\teraterm\\ttermpro.exe" /W=%d /T=1 %h %p',
+                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt "%d" -gns3 5 -skin 4',
+                            'SuperPutty (Windows)': 'SuperPutty.exe -telnet "%h -P %p -wt \"%d\" -gns3 5 -skin 4"',
+                            'SecureCRT (Windows)': '"C:\Program Files\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
+                            'TeraTerm or TeraTerm Pro (Windows 64-bit)': r'"C:\Program Files (x86)\teraterm\ttermpro.exe" /W="%d" /M="C:\Program Files\GNS3\ttstart.macro" /T=1 %h %p',
+                            'TeraTerm or TeraTerm Pro (Windows 32-bit)': r'"C:\Program Files\teraterm\ttermpro.exe" /W="%d" /M="C:\Program Files\GNS3\ttstart.macro" /T=1 %h %p"',
                             'Telnet (Windows)': 'telnet %h %p',
+                            'Xshell 4 (Windows)': 'C:\Program Files (x86)\\NetSarang\\Xshell 4\\xshell.exe -url telnet://%h:%p'
                             }
 elif platform.system() == 'Windows':
     TERMINAL_PRESET_CMDS = {
-                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt %d -gns3 5',
+                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt "%d" -gns3 5 -skin 4',
+                            'SuperPutty (Windows)': 'SuperPutty.exe -telnet "%h -P %p -wt \"%d\" -gns3 5 -skin 4"',
                             'SecureCRT (Windows)': '"C:\Program Files\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
-                            'TeraTerm (Windows)': '"C:\Program Files\\teraterm\\ttermpro.exe" /W=%d /T=1 %h %p',
-                            'Telnet (Windows)': 'telnet %h %p'
+                            'TeraTerm or TeraTerm Pro (Windows)': r'"C:\Program Files\teraterm\ttermpro.exe" /W="%d" /M="C:\Program Files\GNS3\ttstart.macro" /T=1 %h %p"',
+                            'Telnet (Windows)': 'telnet %h %p',
+                            'Xshell 4 (Windows)': 'C:\Program Files\\NetSarang\\Xshell 4\\xshell.exe -url telnet://%h:%p'
                             }
 elif platform.system() == 'Darwin':
     TERMINAL_PRESET_CMDS = {
                             'Terminal (Mac OS X)': "/usr/bin/osascript -e 'tell application \"terminal\" to do script with command \"telnet %h %p ; exit\"'",
-                            'iTerm (Mac OS X)': "/usr/bin/osascript -e 'tell app \"iTerm\"' -e 'activate' -e 'set myterm to the first terminal' -e 'tell myterm' -e 'set mysession to (make new session at the end of sessions)' -e 'tell mysession' -e 'exec command \"telnet %h %p\"' -e 'set name to \"%d\"' -e 'end tell' -e 'end tell' -e 'end tell'",
+                            'iTerm or iTerm2 (Mac OS X)': "/usr/bin/osascript -e 'tell app \"iTerm\"' -e 'activate' -e 'set myterm to the first terminal' -e 'tell myterm' -e 'set mysession to (make new session at the end of sessions)' -e 'tell mysession' -e 'exec command \"telnet %h %p\"' -e 'set name to \"%d\"' -e 'end tell' -e 'end tell' -e 'end tell'",
                             'SecureCRT (Mac OS X)': '/Applications/SecureCRT.app/Contents/MacOS/SecureCRT /ARG %d /T /TELNET %h %p'
                             }
 else:  # For unknown platforms, or if detection failed, we list all options.
     TERMINAL_PRESET_CMDS = {
-                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt %d -gns3 5',
-                            'SecureCRT (Windows 64-bit)': '"C:\Program Files (x86)\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
-                            'SecureCRT (Windows 32-bit)': '"C:\Program Files\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
-                            'TeraTerm (Windows 32-bit)': '"C:\Program Files\\teraterm\\ttermpro.exe" /W=%d /T=1 %h %p',
-                            'TeraTerm (Windows 64-bit)': '"C:\Program Files (x86)\\teraterm\\ttermpro.exe" /W=%d /T=1 %h %p',
+                            'Putty (Windows, included with GNS3)': 'putty.exe -telnet %h %p -wt "%d" -gns3 5 -skin 4',
+                            'SuperPutty (Windows)': 'SuperPutty.exe -telnet "%h -P %p -wt \"%d\" -gns3 5 -skin 4"',
+                            'SecureCRT (Windows)': '"C:\Program Files\\VanDyke Software\\SecureCRT\\SecureCRT.EXE" /SCRIPT securecrt.vbs /ARG %d /T /TELNET %h %p',
+                            'TeraTerm or TeraTerm Pro (Windows 64-bit)': r'"C:\Program Files (x86)\teraterm\ttermpro.exe" /W="%d" /M="C:\Program Files\GNS3\ttstart.macro" /T=1 %h %p',
+                            'TeraTerm or TeraTerm Pro (Windows 32-bit)': r'"C:\Program Files\teraterm\ttermpro.exe" /W="%d" /M="C:\Program Files\GNS3\ttstart.macro" /T=1 %h %p"',
                             'Telnet (Windows)': 'telnet %h %p',
+                            'Xshell 4 (Windows 32-bit)': 'C:\Program Files\\NetSarang\\Xshell 4\\xshell.exe -url telnet://%h:%p',
+                            'Xshell 4 (Windows 64-bit)': 'C:\Program Files (x86)\\NetSarang\\Xshell 4\\xshell.exe -url telnet://%h:%p',
                             'xterm (Linux/BSD)': 'xterm -T %d -e \'telnet %h %p\' >/dev/null 2>&1 &',
-                            'Putty (Linux/BSD)': 'putty -telnet %h %p',
+                            'Putty (Linux/BSD)': 'putty -telnet %h %p -title %d -sl 2500 -fg SALMON1 -bg BLACK',
                             'Gnome Terminal (Linux/BSD)': 'gnome-terminal -t %d -e \'telnet %h %p\' >/dev/null 2>&1 &',
-                            'KDE Konsole (Linux/BSD)': '/usr/bin/konsole --new-tab -p tabtitle=%d -e telnet %h %p >/dev/null 2>&1 &',
+                            'KDE Konsole (Linux/BSD)': 'konsole --new-tab -p tabtitle=%d -e telnet %h %p >/dev/null 2>&1 &',
+                            'SecureCRT (Linux)': 'SecureCRT /T /N "%d"  /TELNET %h %p',
+                            'Mate Terminal (Linux Mint)': 'mate-terminal --tab -e \'telnet %h %p\'  -t %d >/dev/null 2>&1 & ',
                             'Terminal (Mac OS X)': "/usr/bin/osascript -e 'tell application \"terminal\" to do script with command \"telnet %h %p ; exit\"'",
-                            'iTerm (Mac OS X)': "/usr/bin/osascript -e 'tell app \"iTerm\"' -e 'activate' -e 'set myterm to the first terminal' -e 'tell myterm' -e 'set mysession to (make new session at the end of sessions)' -e 'tell mysession' -e 'exec command \"telnet %h %p\"' -e 'set name to \"%d\"' -e 'end tell' -e 'end tell' -e 'end tell'",
+                            'iTerm or iTerm2 (Mac OS X)': "/usr/bin/osascript -e 'tell app \"iTerm\"' -e 'activate' -e 'set myterm to the first terminal' -e 'tell myterm' -e 'set mysession to (make new session at the end of sessions)' -e 'tell mysession' -e 'exec command \"telnet %h %p\"' -e 'set name to \"%d\"' -e 'end tell' -e 'end tell' -e 'end tell'",
                             'SecureCRT (Mac OS X)': '/Applications/SecureCRT.app/Contents/MacOS/SecureCRT /ARG %d /T /TELNET %h %p'
                             }
 
@@ -215,19 +241,26 @@ else:  # For unknown platforms, or if detection failed, we list all options.
 if sys.platform.startswith('darwin'):
     TERMINAL_DEFAULT_CMD = unicode(TERMINAL_PRESET_CMDS['Terminal (Mac OS X)'])
 elif sys.platform.startswith('win'):
-    TERMINAL_DEFAULT_CMD = unicode(TERMINAL_PRESET_CMDS['Putty (Windows, included with GNS3)'])
+    if os.path.exists(os.getcwdu() + os.sep + "SuperPutty.exe"):
+        TERMINAL_DEFAULT_CMD = unicode(TERMINAL_PRESET_CMDS['SuperPutty (Windows)'])
+    else:
+        TERMINAL_DEFAULT_CMD = unicode(TERMINAL_PRESET_CMDS['Putty (Windows, included with GNS3)'])
 else:
     TERMINAL_DEFAULT_CMD = unicode(TERMINAL_PRESET_CMDS['xterm (Linux/BSD)'])
 
 # Default terminal serial command
 if sys.platform.startswith('win'):
-    TERMINAL_SERIAL_DEFAULT_CMD = unicode('putty.exe -serial %s -wt "%d [Local Console]" -gns3 5')
+    if os.path.exists(os.getcwdu() + os.sep + "SuperPutty.exe"):
+        TERMINAL_SERIAL_DEFAULT_CMD = unicode('SuperPutty.exe -serial "%s -wt \"%d\" -gns3 5 -skin 4"')
+    else:
+        TERMINAL_SERIAL_DEFAULT_CMD = unicode('putty.exe -serial %s -wt "%d [Local Console]" -gns3 5')
 elif sys.platform.startswith('darwin'):
-    TERMINAL_SERIAL_DEFAULT_CMD = unicode("/usr/bin/osascript -e 'tell application \"terminal\" to do script with command \"socat UNIX-CONNECT:%s stdio,raw,echo=0 ; exit\"'")
+    #/usr/bin/osascript -e 'tell application "terminal" to do script with command "socat UNIX-CONNECT:\"%s\" stdio,raw,echo=0 ; exit"'
+    TERMINAL_SERIAL_DEFAULT_CMD = unicode("/usr/bin/osascript -e 'tell application \"terminal\" to do script with command \"socat UNIX-CONNECT:\\\"%s\\\" stdio,raw,echo=0 ; exit\"'")
 else:
-    TERMINAL_SERIAL_DEFAULT_CMD = unicode('xterm -T %d -e \'socat UNIX-CONNECT:%s stdio,raw,echo=0\' > /dev/null 2>&1 &')
+    TERMINAL_SERIAL_DEFAULT_CMD = unicode('xterm -T %d -e \'socat UNIX-CONNECT:"%s" stdio,raw,echo=0\' > /dev/null 2>&1 &')
 
-# Default project directory
+# Default projects directory
 if sys.platform.startswith('win') and os.environ.has_key("HOMEDRIVE") and os.environ.has_key("HOMEPATH"):
     PROJECT_DEFAULT_DIR = unicode(os.environ["HOMEDRIVE"] + os.environ["HOMEPATH"] + os.sep + 'GNS3' + os.sep + 'Projects', 'utf-8', errors='replace')
 elif os.environ.has_key("HOME"):
@@ -239,7 +272,7 @@ elif os.environ.has_key("TMP"):
 else:
     PROJECT_DEFAULT_DIR = unicode('/tmp')
 
-# Default IOS image directory
+# Default IOS images directory
 if sys.platform.startswith('win') and os.environ.has_key("HOMEDRIVE") and os.environ.has_key("HOMEPATH"):
     IOS_DEFAULT_DIR = unicode(os.environ["HOMEDRIVE"] + os.environ["HOMEPATH"] + os.sep + 'GNS3' + os.sep + 'Images', 'utf-8', errors='replace')
 elif os.environ.has_key("HOME"):
@@ -250,6 +283,41 @@ elif os.environ.has_key("TMP"):
     IOS_DEFAULT_DIR = unicode(os.environ["TMP"], 'utf-8', errors='replace')
 else:
     IOS_DEFAULT_DIR = unicode('/tmp')
+
+# Default path to dot executable
+if sys.platform.startswith('win'):
+    DOT_DEFAULT_PATH = unicode('dot.exe')
+elif sys.platform.startswith('darwin'):
+    if hasattr(sys, "frozen"):
+        DOT_DEFAULT_PATH = os.getcwdu() + os.sep + '../Resources/dot.bin'
+    else:
+        DOT_DEFAULT_PATH = os.getcwdu() + os.sep + 'dot.bin'
+else:
+    DOT_DEFAULT_PATH = unicode('dot')
+
+# Default reportlab directory
+if sys.platform.startswith('win'):
+    REPORTLAB_DEFAULT_DIR = unicode(sys.prefix + os.sep + 'Lib' + os.sep + 'site-packages' + os.sep + 'reportlab', 'utf-8', errors='replace')
+else:
+    REPORTLAB_DEFAULT_DIR = unicode(sys.prefix + os.sep + 'lib' + os.sep + 'python' + sys.version[0] + sys.version[1] + sys.version[2] + os.sep + 'site-packages' + os.sep + 'reportlab', 'utf-8', errors='replace')
+
+# Default PIL directory
+if sys.platform.startswith('win'):
+    PIL_DEFAULT_DIR = unicode(sys.prefix + os.sep + 'Lib' + os.sep + 'site-packages' + os.sep + 'PIL', 'utf-8', errors='replace')
+else:
+    PIL_DEFAULT_DIR = unicode(sys.prefix + os.sep + 'lib' + os.sep + 'python' + sys.version[0] + sys.version[1] + sys.version[2] + os.sep + 'site-packages' + os.sep + 'PIL', 'utf-8', errors='replace')
+
+# Default deployement wizard directory
+if sys.platform.startswith('win') and os.environ.has_key("HOMEDRIVE") and os.environ.has_key("HOMEPATH"):
+    DEPLOYEMENTWIZARD_DEFAULT_PATH = unicode(os.environ["HOMEDRIVE"] + os.environ["HOMEPATH"] + os.sep + 'GNS3' + os.sep + 'Projects', 'utf-8', errors='replace')
+elif os.environ.has_key("HOME"):
+    DEPLOYEMENTWIZARD_DEFAULT_PATH = unicode(os.environ["HOME"] + os.sep + 'GNS3' + os.sep + 'Projects', 'utf-8', errors='replace')
+elif os.environ.has_key("TEMP"):
+    DEPLOYEMENTWIZARD_DEFAULT_PATH = unicode(os.environ["TEMP"], 'utf-8', errors='replace')
+elif os.environ.has_key("TMP"):
+    DEPLOYEMENTWIZARD_DEFAULT_PATH = unicode(os.environ["TMP"], 'utf-8', errors='replace')
+else:
+    DEPLOYEMENTWIZARD_DEFAULT_PATH = unicode('/tmp')
 
 SysConfigDir = "/etc/gns3"
 UsrConfigDir = "~/.gns3"
@@ -277,6 +345,8 @@ conf_iosImage_defaults = {
     'platform': '',
     'chassis': '',
     'idlepc': '',
+    'idlemax': 1500,
+    'idlesleep': 30,
     'default_ram': 0,
     'hypervisors': [],
     'default': False
@@ -289,6 +359,8 @@ conf_iosImage_types = {
     'platform': str,
     'chassis': str,
     'idlepc': str,
+    'idlemax': int,
+    'idlesleep': int,
     'default_ram': int,
     'hypervisors': list,
     'default': bool
@@ -299,8 +371,8 @@ conf_hypervisor_defaults = {
     'host': '',
     'port': 7200,
     'workdir': '',
-    'baseUDP': 10000,
-    'baseConsole': 2001,
+    'baseUDP': 10001,
+    'baseConsole': 2101,
     'baseAUX': 2501,
     'used_ram':0,
 }
@@ -321,10 +393,13 @@ conf_qemuImage_defaults = {
     'name': '',
     'filename': '',
     'memory': 256,
-    'nib_nb': 6,
+    'nic_nb': 6,
+    'usermod': False,
     'nic': 'rtl8139',
+    'flavor': 'Default',
     'options': '',
-    'kvm': False
+    'kvm': False,
+    'monitor': False
 }
 
 conf_qemuImage_types = {
@@ -333,20 +408,23 @@ conf_qemuImage_types = {
     'filename': unicode,
     'memory': int,
     'nic_nb': int,
+    'usermod': bool,
     'nic': str,
+    'flavor': str,
     'options': str,
-    'kvm': bool
+    'kvm': bool,
+    'monitor': bool
 }
 
 conf_vboxImage_defaults = {
     'id': -1,
     'name': '',
     'filename': '',
-    'nib_nb': 6,
+    'nic_nb': 6,
     'nic': 'automatic',
     'guestcontrol_user': '',
     'guestcontrol_password': '',
-    'first_nic_managed': False,
+    'first_nic_managed': True,
     'headless_mode': False,
     'console_support': False,
     'console_telnet_server': False,
@@ -371,7 +449,7 @@ conf_pixImage_defaults = {
     'name': '',
     'filename': '',
     'memory': 128,
-    'nib_nb': 6,
+    'nic_nb': 6,
     'nic': 'e1000',
     'options': '',
     'key': '',
@@ -394,11 +472,13 @@ conf_junosImage_defaults = {
     'id': -1,
     'name': '',
     'filename': '',
-    'memory': 96,
-    'nib_nb': 6,
+    'memory': 512,
+    'nic_nb': 6,
+    'usermod' : False,
     'nic': 'e1000',
     'options': '',
-    'kvm': False
+    'kvm': False,
+    'monitor': False
 }
 
 conf_junosImage_types = {
@@ -407,19 +487,23 @@ conf_junosImage_types = {
     'filename': unicode,
     'memory': int,
     'nic_nb': int,
+    'usermod' : bool,
     'nic': str,
     'options': str,
-    'kvm': bool
+    'kvm': bool,
+    'monitor': bool
 }
 
 conf_asaImage_defaults = {
     'id': -1,
     'name': '',
     'memory': 256,
-    'nib_nb': 6,
+    'nic_nb': 6,
+    'usermod' : False,
     'nic': 'e1000',
     'options': '',
     'kvm': False,
+    'monitor': False,
     'kernel': '',
     'initrd': '',
     'kernel_cmdline': ''
@@ -430,11 +514,43 @@ conf_asaImage_types = {
     'name': unicode,
     'memory': int,
     'nic_nb': int,
+    'usermod' : bool,
+    'nic': str,
+    'options': str,
+    'kvm': bool,
+    'monitor': bool,
+    'kernel': unicode,
+    'initrd': unicode,
+    'kernel_cmdline': unicode,
+}
+
+conf_awprouterImage_defaults = {
+    'id': -1,
+    'name': '',
+    'memory': 256,
+    'nic_nb': 6,
+    'usermod' : False,
+    'nic': 'virtio',
+    'options': '',
+    'kvm': False,
+    'kernel': '',
+    'initrd': '',
+    'rel': '',
+    'kernel_cmdline': 'root=/dev/ram0 releasefile=0.0.0-test.rel console=ttyS0,0 no_autorestart loglevel=1'
+}
+
+conf_awprouterImage_types = {
+    'id': int,
+    'name': unicode,
+    'memory': int,
+    'nic_nb': int,
+    'usermod' : bool,
     'nic': str,
     'options': str,
     'kvm': bool,
     'kernel': unicode,
     'initrd': unicode,
+    'rel': unicode,
     'kernel_cmdline': unicode,
 }
 
@@ -444,10 +560,12 @@ conf_idsImage_defaults = {
     'image1': '',
     'image2': '',
     'memory': 512,
-    'nib_nb': 3,
+    'nic_nb': 3,
+    'usermod' : False,
     'nic': 'e1000',
     'options': '',
-    'kvm': False
+    'kvm': False,
+    'monitor': False
 }
 
 conf_idsImage_types = {
@@ -457,9 +575,11 @@ conf_idsImage_types = {
     'image2': unicode,
     'memory': int,
     'nic_nb': int,
+    'usermod' : bool,
     'nic': str,
     'options': str,
-    'kvm': bool
+    'kvm': bool,
+    'monitor': bool
 }
 
 conf_systemDynamips_defaults = {
@@ -467,8 +587,8 @@ conf_systemDynamips_defaults = {
     'port': 7200,
     'workdir': '',
     'clean_workdir': True,
-    'baseUDP': 10000,
-    'baseConsole': 2001,
+    'baseUDP': 10001,
+    'baseConsole': 2101,
     'baseAUX': 2501,
     'ghosting': True,
     'jitsharing': False,
@@ -506,13 +626,14 @@ conf_systemGeneral_defaults = {
     'lang': 'en',
     'project_startup': True,
     'relative_paths': True,
+    'auto_screenshot': True,
     'slow_start': 1,
     'autosave': 60,
     'term_cmd': '',
-    'use_shell': False,
+    'use_shell': True,
     'bring_console_to_front': False,
     'term_serial_cmd': '',
-    'term_close_on_delete': False,
+    'term_close_on_delete': True,
     'project_path': '.',
     'ios_path': '.',
     'status_points': True,
@@ -521,13 +642,14 @@ conf_systemGeneral_defaults = {
     'scene_height': 1000,
     'auto_check_for_update': True,
     'last_check_for_update': 0,
-    'console_delay': 0.5,
+    'console_delay': 1,
 }
 
 conf_systemGeneral_types = {
     'lang': unicode,
     'project_startup': bool,
     'relative_paths': bool,
+    'auto_screenshot': bool,
     'slow_start': int,
     'autosave': int,
     'use_shell': bool,
@@ -620,4 +742,14 @@ conf_systemVBox_types = {
     'vboxwrapper_port': int,
     'vboxwrapper_baseUDP': int,
     'vboxwrapper_baseConsole': int,
+}
+
+conf_systemDeployementWizard_defaults = {
+    'deployementwizard_path': '',
+    'deployementwizard_filename': '',
+}
+
+conf_systemDeployementWizard_types = {
+    'deployementwizard_path': unicode,
+    'deployementwizard_filename': unicode,
 }

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -32,7 +31,7 @@ class AnyVBoxEmuDefaults(AbstractDefaults):
         self.default_netcard = 'automatic'
         self.default_nics = 6
         self.default_guestcontrol_user = ''
-        self.default_first_nic_managed = False
+        self.default_first_nic_managed = True
         self.default_headless_mode = False
         self.default_console_support = False
         self.default_console_telnet_server = False

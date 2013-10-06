@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (c) 2007-2012 Thomas Pani, Jeremy Grossmann & Alexey Eromenko "Technologov"
 #
@@ -83,7 +82,7 @@ debugmsg(2, 'Starting vboxwrapper')
 debugmsg(1, "debuglevel =  %s" % debuglevel + os.linesep)
 
 __author__ = 'Thomas Pani, Jeremy Grossmann and Alexey Eromenko "Technologov"'
-__version__ = '0.8.3'
+__version__ = '0.8.5'
 
 PORT = 11525
 IP = ""
@@ -145,7 +144,7 @@ class xVBOXInstance(object):
         self.netcard = 'automatic'
         self.guestcontrol_user = ''
         self.guestcontrol_password = ''
-        self.first_nic_managed = False
+        self.first_nic_managed = True
         self.headless_mode = False
         self.console_support = False
         self.console_telnet_server = False
@@ -190,6 +189,7 @@ class xVBOXInstance(object):
 
     def start(self):
         debugmsg(2, "xVBOXInstance::start()")
+        global WORKDIR
         self.vmname = self.image
 
         if self.console_support == 'True':
@@ -197,14 +197,17 @@ class xVBOXInstance(object):
             pipe_name = p.sub("_", self.vmname)
             if sys.platform.startswith('win'):
                 pipe_name = r'\\.\pipe\VBOX\%s' % pipe_name
-            elif os.path.exists(self.workdir):
-                pipe_name = self.workdir + os.sep + "vbox_pipe_to_%s" % pipe_name
+            elif os.path.exists(WORKDIR):
+                pipe_name = WORKDIR + os.sep + "pipe_%s" % pipe_name
             else:
-                pipe_name = "/tmp/vbox_pipe_to_%s" % pipe_name
+                pipe_name = "/tmp/pipe_%s" % pipe_name
         else:
             pipe_name = None
 
         started = self.vbc.start(self.vmname, self.nics, self.udp, self.capture, self.netcard, self.first_nic_managed, self.headless_mode, pipe_name)
+        
+        if started:
+            self.vbc.setName(self.name)
 
         if started and self.console_support == 'True' and int(self.console) and self.console_telnet_server == 'True':
 
@@ -263,12 +266,12 @@ class xVBOXInstance(object):
     def create_udp(self, i_vnic, sport, daddr, dport):
         debugmsg(2, "xVBOXInstance::create_udp(%s, %s, %s, %s)" % (str(i_vnic), str(sport), str(daddr), str(dport)))
         # FlexiNetwork: Link hot-add
-        return self.vbc.create_udp(int(i_vnic)-1, sport, daddr, dport)
+        return self.vbc.create_udp(int(i_vnic), sport, daddr, dport)
 
     def delete_udp(self, i_vnic):
         debugmsg(2, "xVBOXInstance::delete_udp(%s)" % str(i_vnic))
         # FlexiNetwork: Link hot-remove
-        return self.vbc.delete_udp(int(i_vnic)-1)
+        return self.vbc.delete_udp(int(i_vnic))
 
     def get_nio_stats(self, vnic):
         # This function retrieves sent/received bytes from VMs.
@@ -451,6 +454,7 @@ class VBoxWrapperRequestHandler(SocketServer.StreamRequestHandler):
             self.handle_one_request()
             while not self.close_connection:
                 self.handle_one_request()
+            print "Disconnection from", self.client_address
         except socket.error, e:
             print >> sys.stderr, e
             self.request.close()
@@ -476,6 +480,9 @@ class VBoxWrapperRequestHandler(SocketServer.StreamRequestHandler):
 
         return tokens
 
+    def finish(self):
+        pass
+
     def handle_one_request(self):
         debugmsg(3, "VBoxWrapperRequestHandler::handle_one_request()")
         request = self.rfile.readline()
@@ -496,8 +503,10 @@ class VBoxWrapperRequestHandler(SocketServer.StreamRequestHandler):
         # Parse request.
         tokens = self.__get_tokens(request)
         if len(tokens) < 2:
-            self.send_reply(self.HSC_ERR_PARSING, 1,
-                            "At least a module and a command must be specified")
+            try:
+                self.send_reply(self.HSC_ERR_PARSING, 1, "At least a module and a command must be specified")
+            except socket.error:
+                self.close_connection = 1
             return
 
         module, command = tokens[:2]
@@ -609,9 +618,9 @@ class VBoxWrapperRequestHandler(SocketServer.StreamRequestHandler):
             os.chdir(working_dir)
             global WORKDIR
             WORKDIR = working_dir
-            print "Working directory is now %s" % WORKDIR
-            for vbox_name in VBOX_INSTANCES.keys():
-                VBOX_INSTANCES[vbox_name].workdir = os.path.join(working_dir, VBOX_INSTANCES[vbox_name].name)
+            # VBOX doesn't need a working directory ... for now
+            #for vbox_name in VBOX_INSTANCES.keys():
+            #    VBOX_INSTANCES[vbox_name].workdir = os.path.join(working_dir, VBOX_INSTANCES[vbox_name].name)
             self.send_reply(self.HSC_INFO_OK, 1, "OK")
         except OSError, e:
             self.send_reply(self.HSC_ERR_INV_PARAM, 1,
@@ -969,7 +978,7 @@ def main():
             debugmsg(3, "VBoxWrapperServer::VBoxInit(), CoMarshal..()")
             VBOX_STREAM = pythoncom.CoMarshalInterThreadInterfaceInStream(pythoncom.IID_IDispatch, g_vboxManager.vbox)
 
-    if options.host:
+    if options.host and options.host != '0.0.0.0':
         host = options.host
         global IP
         IP = host

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -86,7 +85,6 @@ class Ethernet(AbstractEdge):
     def paint(self, painter, option, widget):
         """ Draw the status points
         """
-
         QtGui.QGraphicsPathItem.paint(self, painter, option, widget)
 
         if not self.fake and globals.GApp.systconf['general'].status_points:
@@ -200,3 +198,4 @@ class Ethernet(AbstractEdge):
                 self.labelDestIf.hide()
 
             painter.drawPoint(point2)
+

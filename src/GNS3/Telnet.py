@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -27,15 +26,17 @@ try:
 except:
     pass
 
+
 def pipe_connect(hostname, pipe_name):
     """ Start a telnet console and connect to a pipe
     """
 
+    # We use Putty shipped with GNS3
     cmd = globals.GApp.systconf['general'].term_serial_cmd.strip()
     if not cmd:
         QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Console", "Console"), translate("Console", "No terminal command defined for local console/serial connections"))
-        return False  
-    
+        return False
+
     if globals.GApp.systconf['general'].use_shell:
         shell = True
     else:
@@ -43,6 +44,7 @@ def pipe_connect(hostname, pipe_name):
 
     cmd = cmd.replace('%s', pipe_name)
     cmd = cmd.replace('%d', hostname)
+    debug('Start serial console program %s' % cmd)
     try:
         proc = sub.Popen(cmd, shell=shell)
     except (OSError, IOError), e:
@@ -57,6 +59,10 @@ def connect(host, port, name):
     try:
         console = globals.GApp.systconf['general'].term_cmd.strip()
         if console:
+#            if globals.GApp.systconf['general'].bring_console_to_front:
+#                if bringConsoleToFront(console, host, port, name):
+#                    # On successful attempt, we skip further processing
+#                    return (True)
             console = console.replace('%h', host)
             console = console.replace('%p', str(port))
             console = console.replace('%d', name)
@@ -80,8 +86,10 @@ def connect(host, port, name):
                 proc = sub.Popen("xterm -T " + name + " -e 'telnet " + host + " " + str(port) + "' > /dev/null 2>&1 &", shell=True)
     except (OSError, IOError), e:
         QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("Console", "Console"), translate("Console", "Cannot start %s: %s") % (console, e.strerror))
+
         return None
     return proc
+
 
 def bringConsoleToFront(console, name):
     # Attempts to bring console terminal to front, and returns True if succeeds.
@@ -89,6 +97,9 @@ def bringConsoleToFront(console, name):
     # Technologov: This code is experimental, and does not support all terminal emulators.
     # Maybe it should be based on PIDs, rather than window names?
     if sys.platform.startswith('win'):# and console.startswith("putty.exe"):
+        return winm.bringWindowToFront("Dynamips", "%s" % name)
+    if sys.platform.startswith('darwin'):
+        # Not implemented, this is handled by OSX
         return winm.bringWindowToFront("Dynamips", "%s" % name)
     if sys.platform.startswith('darwin'):
         # Not implemented, this is handled by OSX

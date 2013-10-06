@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -27,6 +26,7 @@ import GNS3.Globals as globals
 import GNS3.Dynagen.dynagen_vbox_lib as vboxlib
 from PyQt4 import QtCore, QtGui
 from GNS3.Utils import translate, debug, killAll
+
 
 class VBoxManager(object):
     """ VBoxManager class
@@ -99,7 +99,7 @@ class VBoxManager(object):
         self.port = port
 
         if self.proc and self.proc.state():
-            debug("VBoxManager: VBox is already started with pid %i" % int(self.proc.pid()))
+            debug('VBoxManager: VBox is already started with pid ' + str(self.proc.pid()))
             return True
 
         self.proc = QtCore.QProcess(globals.GApp.mainWindow)
@@ -136,7 +136,7 @@ class VBoxManager(object):
 
         self.waitVBox(binding)
         if self.proc and self.proc.state():
-            debug("VBoxManager: VBox has been started with pid %i" % int(self.proc.pid()))
+            debug('VBoxManager: VBox has been started with pid ' + str(self.proc.pid()))
         return True
 
 
@@ -145,15 +145,18 @@ class VBoxManager(object):
         """
         #print "Entered VBoxManager::stopVBox()"
 
-        for hypervisor in globals.GApp.dynagen.dynamips.values():
-            if isinstance(hypervisor, vboxlib.VBox):
-                try:
-                    hypervisor.reset()
-                    hypervisor.close()
-                except:
-                    continue
+        try:
+            for hypervisor in globals.GApp.dynagen.dynamips.values():
+                if isinstance(hypervisor, vboxlib.VBox):
+                    try:
+                        hypervisor.reset()
+                        hypervisor.close()
+                    except:
+                        continue
+        except:
+            pass
         if self.proc and self.proc.state():
-            debug("VBoxManager: stop VBox with pid %i" % int(self.proc.pid()))
+            debug('VBoxManager: stop VBox with pid ' + str(self.proc.pid()))
             self.proc.terminate()
             time.sleep(0.5)
             self.proc.close()

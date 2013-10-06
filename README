@@ -1,6 +1,6 @@
 INSTALLATION
 
-* GNS3 VirtualBox Edition dependencies:
+* GNS3 dependencies:
 
 - Qt 4.5.1 (or higher)
 - Python 2.6 (or higher)
@@ -8,14 +8,14 @@ INSTALLATION
 - PyQt 4.5 (or higher)
 - Dynamips 0.2.8+
 - VirtualBox 4.1.x
-- QEMU (with UDP patch)
+- QEMU 1.1+
 - PEMU
 - xdotool (on X11 UNIX-like platforms)
 - Wireshark
 
 * WINDOWS users:
 
-Download the GNS3 all-in-one for Windows on http://www.gns3.net (~12 MB)
+Download the GNS3 all-in-one for Windows on http://www.gns3.net
 This program will install a binary version of GNS3 as well as Dynamips, Qemu and WinPCAP.
 
 Recommendation: Dynamips has better performances on other platforms such as Linux or Mac OS X.
@@ -24,8 +24,9 @@ Recommendation: Dynamips has better performances on other platforms such as Linu
 
 On Linux you just need to install a package called python-qt4 (or similar). Instead, you can compile all the dependencies manually.
 
-A debian package is now available, until officially released with Debian/Ubuntu follow instructions
-on http://gpl.code.de/oswiki/GplcodedeApt and install "gns3" package (it might not be up-to-date).
+You can run GNS3 from the source directory or install it using the following command:
+
+python setup.py install
 
 * MacOS X users:
 
@@ -35,7 +36,7 @@ Method 1.
 
 2. Download Python 2.6 for MacOS X on http://www.python.org/download/ and install it.
 
-3. Download Qt librairies for Mac on http://qt.nokia.com/downloads and install it. 
+3. Download Qt librairies for Mac on http://qt.nokia.com/downloads and install it.
 
 4. Download SIP on http://www.riverbankcomputing.com/software/sip/download, compile and install it:
 
@@ -64,15 +65,15 @@ Method 2 (this can take a few hours as everything is compiled).
 
 1. Download and install MacPorts http://guide.macports.org/#installing (you will need the Apple Devs Tools).
 
-2. Open a terminal and install GNS3 dependencies. 
+2. Open a terminal and install GNS3 dependencies.
 
 	Macintosh:$ sudo port install python26
 	Macintosh:$ sudo port install py26-sip
 	Macintosh:$ sudo port install py26-pyqt4
 	Macintosh:$ sudo port install qt4-mac
-	
+
 	Optionnal: to prevent MacPorts to install the last version of the dependencies (which may not work properly with GNS3), you can force a specified version with @.
-	
+
 	Example:
 
 	Macintosh:$ sudo port install python26

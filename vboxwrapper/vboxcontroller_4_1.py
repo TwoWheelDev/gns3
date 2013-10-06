@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (c) 2011 Alexey Eromenko "Technologov"
 #
@@ -86,9 +85,7 @@ class VBoxController_4_1():
         debugmsg(2, "class VBoxController_4_1::__init__()")
         self.mgr = io_vboxManager
         self.vbox = self.mgr.vbox
-        #self.maxNics = self.vbox.systemProperties.networkAdapterCount    # VBox 4.0.
-        #self.maxNics = self.vbox.systemProperties.getMaxNetworkAdapters(self.mach.chipsetType) # VBox 4.1
-        self.maxNics = 8    # Workaround for VirtualBox 4.1
+        self.maxNics = 8
         self.constants = self.mgr.constants
         self.statBytesReceived = 0
         self.statBytesSent = 0
@@ -96,7 +93,7 @@ class VBoxController_4_1():
         self.guestIP = ""
         self.VBoxBug9239Workaround = True # VBoxSVC crash on Windows hosts.
 
-    def start(self, vmname, nics, udp, capture, netcard, first_nic_managed='False', headless_mode='False', pipe_name=None):
+    def start(self, vmname, nics, udp, capture, netcard, first_nic_managed='True', headless_mode='False', pipe_name=None):
         debugmsg(2, "VBoxController_4_1::start()")
         # note: If you want to improve 'vboxwrapper' code, take a look at
         #   'vboxshell', the official VirtualBox frontend writen in python.
@@ -108,7 +105,7 @@ class VBoxController_4_1():
         self.first_nic_managed = first_nic_managed
         self.headless_mode = headless_mode
         self.pipe_name = pipe_name
-        debugmsg(3, "vmname = %s, nics = %s, capture = %s, netcard = %s" % (vmname, nics, capture, netcard))
+        debugmsg(3, "vmname = %s, nics = %s, capture = %s, netcard = %s, 1st NIC managed = %s" % (vmname, nics, capture, netcard, first_nic_managed))
 
         debugmsg(2, "findMachine() is starting vmname = %s" % unicode(self.vmname))
         try:
@@ -118,6 +115,8 @@ class VBoxController_4_1():
             debugmsg(1, "findMachine() FAILED")
             debugmsg(1, e)
             return False
+        # Maximum support network cards depends on the Chipset (PIIX3 or ICH9)
+        self.maxNics = self.vbox.systemProperties.getMaxNetworkAdapters(self.mach.chipsetType)
         if not self._safeGetSessionObject():
             return False
         if not self._safeNetOptions():
@@ -163,7 +162,7 @@ class VBoxController_4_1():
                 #Wait for VM to actually go down:
                 self.progress.waitForCompletion(-1)
                 debugmsg(3, "self.progress.percent = %s" % str(self.progress.percent))
-                self._safeUnlockMachine()
+                #self._safeUnlockMachine()
             except:
                 #Do not crash "vboxwrapper", if stopping VM fails.
                 #But return True anyway, so VM state in GNS3 can become "stopped"
@@ -179,9 +178,17 @@ class VBoxController_4_1():
             debugmsg(3, "mach2=self.session.machine FAILED ! Skipping shutdown of interfaces...")
             return True
 
-        for vnic in range(1, self.maxNics):
+        #time.sleep(1)
+        if self.first_nic_managed == 'False':
+            # first nic is managed by GNS3
+            start_nic = 0
+        else:
+            # We leave vNIC #1 (vnic = 0) for VirtualBox management purposes
+            start_nic = 1
+
+        for vnic in range(start_nic, int(self.nics)):
             debugmsg(3, "Disabling managed netadp %s" % str(vnic))
-            if not self._safeDisableNetAdpFromMachine(mach2, vnic):
+            if not self._safeDisableNetAdpFromMachine(mach2, vnic, disableAdapter=True):
                 debugmsg(3, "Disabling managed netadp %s FAILED, skipped." % str(vnic))
                 #Return True anyway, so VM state in GNS3 can become "stopped"
                 return True
@@ -203,6 +210,21 @@ class VBoxController_4_1():
           self.console.resume()
         except:
           return False
+        return True
+    
+    def setName(self, name):
+        debugmsg(2, "VBoxController_4_1::setName()")
+        try:
+            self.mach.setGuestPropertyValue("NameInGNS3",name)
+        except E_ACCESSDENIED:
+            debugmsg(2, "setName FAILED : E_ACCESSDENIED")
+            return False
+        except VBOX_E_INVALID_VM_STATE:
+            debugmsg(2, "setName FAILED : VBOX_E_INVALID_VM_STATE")
+            return False
+        except VBOX_E_INVALID_OBJECT_STATE:
+            debugmsg(2, "setName FAILED : VBOX_E_INVALID_OBJECT_STATE")
+            return False
         return True
 
     def displayWindowFocus(self):
@@ -308,9 +330,6 @@ class VBoxController_4_1():
         #To reproduce: Try to configure several VMs, and restart them all in
         #  loop on heavily loaded hosts.
 
-        if not self.pipe_name:
-            return True
-
         if not self._safeLockMachine():
             return False
         try:
@@ -327,10 +346,13 @@ class VBoxController_4_1():
             return False
 
         try:
-            serial_port.enabled = True
-            serial_port.path = self.pipe_name
-            serial_port.hostMode = 1
-            serial_port.server = True
+            if self.pipe_name:
+                serial_port.enabled = True
+                serial_port.path = self.pipe_name
+                serial_port.hostMode = 1
+                serial_port.server = True
+            else:
+                serial_port.enabled = False
         except:
             #Usually due to COM Error: "The object is not ready"
             debugmsg(1, "_console_options() -> serial port settings FAILED !")
@@ -370,18 +392,17 @@ class VBoxController_4_1():
             debugmsg(1, "_net_options() -> getNetworkAdapter() FAILED !")
             return False
 
-        if self.first_nic_managed == 'True':
+        if self.first_nic_managed == 'False':
             # first nic is managed by GNS3
-            start_nic = 1
+            start_nic = 0
         else:
             # We leave vNIC #1 (vnic = 0) for VirtualBox management purposes
-            start_nic = 2
+            start_nic = 1
 
-        for vnic in range(start_nic, int(self.nics) + 1):
-            # By design, we leave vNIC #1 (vnic = 0) for VirtualBox management purposes
+        for vnic in range(start_nic, int(self.nics)):
             try:
                 # Vbox API starts counting from 0
-                netadp = mach2.getNetworkAdapter(vnic-1)
+                netadp = mach2.getNetworkAdapter(vnic)
                 #netadp = mach2.getNetworkAdapter(0)
             except:
                 #Usually due to COM Error on loaded hosts: "The object is not ready"
@@ -441,9 +462,9 @@ class VBoxController_4_1():
                 if not self._safeEnableCapture(netadp, self.capture[vnic]):
                     return False
 
-        for vnic in range(int(self.nics)+1, self.maxNics):
+        for vnic in range(int(self.nics), self.maxNics):
             debugmsg(3, "Disabling remaining netadp %s" % str(vnic))
-            if not self._safeDisableNetAdpFromMachine(mach2, vnic-1):
+            if not self._safeDisableNetAdpFromMachine(mach2, vnic):
                 return False
         if not self._safeSaveSettings(mach2):
             return False
@@ -699,7 +720,7 @@ class VBoxController_4_1():
             return False
         return True
 
-    def _safeDisableNetAdpFromMachine(self, i_mach, i_vnic):
+    def _safeDisableNetAdpFromMachine(self, i_mach, i_vnic, disableAdapter=True):
         #_safe*() functions exist as a protection against COM failure on loaded hosts.
         debugmsg(3, "VBoxController_4_1::_safeDisableNetAdpFromMachine()")
         #This command is retried several times, because it fails more often...
@@ -714,7 +735,8 @@ class VBoxController_4_1():
                 netadp.traceEnabled=False
                 debugmsg(3, "_safeDisableNetAdpFromMachine() trace disabled.")
                 netadp.attachmentType=self.constants.NetworkAttachmentType_Null
-                netadp.enabled=False
+                if disableAdapter:
+                    netadp.enabled=False
                 break
             except Exception, e:
                 #Usually due to COM Error: "The object is not ready"

@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -21,6 +20,7 @@
 
 #debuglevel: 0=disabled, 1=default, 2=debug, 3=deep debug
 debuglevel = 0
+
 
 def debugmsg(level, message):
     if debuglevel == 0:
@@ -49,6 +49,7 @@ from GNS3.Node.IOSRouter import IOSRouter, init_router_id
 from GNS3.Node.ATMSW import init_atmsw_id
 from GNS3.Node.ATMBR import init_atmbr_id
 from GNS3.Node.ETHSW import ETHSW, init_ethsw_id
+from GNS3.Node.Hub import Hub, init_hub_id
 from GNS3.Node.FRSW import init_frsw_id
 from GNS3.Node.Cloud import Cloud, init_cloud_id
 from GNS3.Node.AnyEmuDevice import init_emu_id, AnyEmuDevice
@@ -57,13 +58,15 @@ from __main__ import GNS3_RUN_PATH, VERSION
 
 router_hostname_re = re.compile(r"""^R([0-9]+)""")
 ethsw_hostname_re = re.compile(r"""^SW([0-9]+)""")
+hub_hostname_re = re.compile(r"""^HUB([0-9]+)""")
 frsw_hostname_re = re.compile(r"""^FR([0-9]+)""")
 atmsw_hostname_re = re.compile(r"""^ATM([0-9]+)""")
 atmbr_hostname_re = re.compile(r"""^BR([0-9]+)""")
 cloud_hostname_re = re.compile(r"""^C([0-9]+)""")
-emu_hostname_re = re.compile(r"""^[PIX|JUNOS|ASA|IDS|QEMU]([0-9]+)""")
+emu_hostname_re = re.compile(r"""^[PIX|JUNOS|ASA|AWP|IDS|QEMU]([0-9]+)""")
 vbox_emu_hostname_re = re.compile(r"""^[VBOX]([0-9]+)""")
 decorative_hostname_re = re.compile(r"""^N([0-9]+)""")
+
 
 class NETFile(object):
     """ NETFile implementing the .net file import/export
@@ -117,9 +120,9 @@ class NETFile(object):
                                     if remote_device.model_string in ['1710', '1720', '1721', '1750']:
                                         self.add_in_connection_list((device.name, source_interface, remote_device.name, rem_int_name + str(rem_dynagen_port)), connection_list)
                                     else:
-                                        self.add_in_connection_list((device.name, source_interface, remote_device.name, rem_int_name + str(remote_adapter.slot) + "/" +str(rem_dynagen_port)),
+                                        self.add_in_connection_list((device.name, source_interface, remote_device.name, rem_int_name + str(remote_adapter.slot) + "/" + str(rem_dynagen_port)),
                                                                                                                                                                             connection_list)
-                                elif isinstance(remote_device, lib.FRSW) or isinstance(remote_device, lib.ATMSW) or isinstance(remote_device, lib.ETHSW) or isinstance(remote_device, lib.ATMBR):
+                                elif isinstance(remote_device, lib.FRSW) or isinstance(remote_device, lib.ATMSW) or isinstance(remote_device, lib.ETHSW) or isinstance(remote_device, lib.Hub) or isinstance(remote_device, lib.ATMBR):
                                     connection_list.append((device.name, source_interface, remote_device.name, str(remote_port)))
                                 elif isinstance(remote_device, qlib.AnyEmuDevice) or isinstance(remote_device, vboxlib.AnyVBoxEmuDevice):
                                     connection_list.append((device.name, source_interface, remote_device.name, remote_adapter + str(remote_port)))
@@ -137,6 +140,8 @@ class NETFile(object):
                 elif isinstance(remote_device, vboxlib.AnyVBoxEmuDevice):
                     self.add_in_connection_list((device.name, 'e' + str(port), remote_device.name, remote_adapter + str(remote_port)), connection_list)
                 elif isinstance(remote_device, lib.ETHSW):
+                    connection_list.append((device.name, 'e' + str(port), remote_device.name, str(remote_port)))
+                elif isinstance(remote_device, lib.Hub):
                     connection_list.append((device.name, 'e' + str(port), remote_device.name, str(remote_port)))
 
     def populate_connection_list_for_emulated_switch(self, device, connection_list):
@@ -181,6 +186,17 @@ class NETFile(object):
                     (remote_device, remote_adapter, remote_port) = lib.get_reverse_udp_nio(nio_port)
                     if isinstance(remote_device, lib.ATMSW) or isinstance(remote_device, lib.ATMBR):
                         self.add_in_connection_list((device.name, str(port), remote_device.name, str(remote_port)), connection_list)
+                        
+        if isinstance(device, lib.Hub):
+            
+            keys = device.nios.keys()
+            for port in keys:
+                nio_port = device.nio(port)
+                # Only NIO_udp
+                if nio_port and isinstance(nio_port, lib.NIO_udp):
+                    (remote_device, remote_adapter, remote_port) = lib.get_reverse_udp_nio(nio_port)
+                    if isinstance(remote_device, lib.Hub) or isinstance(remote_device, lib.ETHSW):
+                        self.add_in_connection_list((device.name, str(port), remote_device.name, str(remote_port)), connection_list)
 
     def create_node(self, device, default_symbol_name, running_config_name):
         """ Create a new node
@@ -189,13 +205,13 @@ class NETFile(object):
 
         symbol_name = x = y = z = hx = hy = None
         config = None
-        if   isinstance(device, qlib.AnyEmuDevice)        and self.dynagen.globalconfig['qemu ' + device.dynamips.host +':' + str(device.dynamips.port)].has_key(running_config_name):
-            config = self.dynagen.globalconfig['qemu ' + device.dynamips.host +':' + str(device.dynamips.port)][running_config_name]
-        elif isinstance(device, vboxlib.AnyVBoxEmuDevice) and self.dynagen.globalconfig['vbox ' + device.dynamips.host +':' + str(device.dynamips.port)].has_key(running_config_name):
-            config = self.dynagen.globalconfig['vbox ' + device.dynamips.host +':' + str(device.dynamips.port)][running_config_name]
-        elif self.dynagen.globalconfig.has_key(device.dynamips.host +':' + str(device.dynamips.port)) and \
+        if   isinstance(device, qlib.AnyEmuDevice)        and self.dynagen.globalconfig['qemu ' + device.dynamips.host + ':' + str(device.dynamips.port)].has_key(running_config_name):
+            config = self.dynagen.globalconfig['qemu ' + device.dynamips.host + ':' + str(device.dynamips.port)][running_config_name]
+        elif isinstance(device, vboxlib.AnyVBoxEmuDevice) and self.dynagen.globalconfig['vbox ' + device.dynamips.host + ':' + str(device.dynamips.port)].has_key(running_config_name):
+            config = self.dynagen.globalconfig['vbox ' + device.dynamips.host + ':' + str(device.dynamips.port)][running_config_name]
+        elif self.dynagen.globalconfig.has_key(device.dynamips.host + ':' + str(device.dynamips.port)) and \
             self.dynagen.globalconfig[device.dynamips.host +':' + str(device.dynamips.port)].has_key(running_config_name):
-            config = self.dynagen.globalconfig[device.dynamips.host +':' + str(device.dynamips.port)][running_config_name]
+            config = self.dynagen.globalconfig[device.dynamips.host + ':' + str(device.dynamips.port)][running_config_name]
         elif self.dynagen.globalconfig.has_key(device.dynamips.host) and self.dynagen.globalconfig[device.dynamips.host].has_key(running_config_name):
             config = self.dynagen.globalconfig[device.dynamips.host][running_config_name]
         #print "config = %s" % str(config)
@@ -297,7 +313,7 @@ class NETFile(object):
             conf_image.hypervisors = [host + ':' + str(device.dynamips.port)]
             conf_hypervisor = hypervisorConf()
             conf_hypervisor.id = globals.GApp.hypervisors_ids
-            globals.GApp.hypervisors_ids +=1
+            globals.GApp.hypervisors_ids += 1
             conf_hypervisor.host = host
             conf_hypervisor.port = device.dynamips.port
             conf_hypervisor.workdir = unicode(device.dynamips.workingdir)
@@ -350,12 +366,12 @@ class NETFile(object):
         globals.GApp.topology.recordLink(srcid, source_interface, dstid, destination_interface, src_node, dst_node)
 
         if not isinstance(src_node, IOSRouter) and not isinstance(src_node, AnyEmuDevice) and not isinstance(src_node, AnyVBoxEmuDevice):
-            if not isinstance(src_node,Cloud) and not src_node.hypervisor:
+            if not isinstance(src_node, Cloud) and not src_node.hypervisor:
                 src_node.get_dynagen_device()
             src_node.startupInterfaces()
             src_node.state = 'running'
         if not isinstance(dst_node, IOSRouter) and not isinstance(dst_node, AnyEmuDevice) and not isinstance(dst_node, AnyVBoxEmuDevice):
-            if not isinstance(dst_node,Cloud) and not dst_node.hypervisor:
+            if not isinstance(dst_node, Cloud) and not dst_node.hypervisor:
                 dst_node.get_dynagen_device()
             dst_node.startupInterfaces()
             dst_node.state = 'running'
@@ -541,7 +557,7 @@ class NETFile(object):
 
                     pixmap_image = QtGui.QPixmap(pixmap_path)
                     if not pixmap_image.isNull():
-                        pixmap_object= Pixmap(pixmap_image, pixmap_path)
+                        pixmap_object = Pixmap(pixmap_image, pixmap_path)
                     else:
                         print translate("NETFile", "Cannot load image: %s") % pixmap_path
                         continue
@@ -652,16 +668,10 @@ class NETFile(object):
             globals.GApp.workspace.setWindowTitle("GNS3")
             globals.GApp.workspace.clear()
             return
-        except lib.DynamipsErrorHandled:
-            QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("NETFile", "Dynamips error"), translate("NETFile", "Connection lost"))
-            globals.GApp.workspace.projectFile = None
-            globals.GApp.workspace.setWindowTitle("GNS3")
-            globals.GApp.workspace.clear()
-            return
         except Exception, ex:
             curdate = time.strftime("%d %b %Y %H:%M:%S")
             logfile = open('import_exception.log','a')
-            logfile.write("========= GNS3 " + VERSION + " traceback on " + curdate + " =========\n")
+            logfile.write("=== GNS3 " + VERSION + " traceback on " + curdate + " ===")
             traceback.print_exc(file=logfile)
             logfile.close()
             traceback.print_exc()
@@ -682,6 +692,7 @@ class NETFile(object):
         config_dir = None
         max_router_id = -1
         max_ethsw_id = -1
+        max_hub_id = -1
         max_frsw_id = -1
         max_atmsw_id = -1
         max_atmbr_id = -1
@@ -689,9 +700,12 @@ class NETFile(object):
         max_vbox_emu_id = -1
         for (devicename, device) in self.dynagen.devices.iteritems():
 
-            if isinstance(device,  lib.Bridge):
+            if isinstance(device, lib.Bridge):
                 translate("NETFile", "Warning: GNS3 doesn't yet support lan statements, ignore it")
                 continue
+
+            if devicename.lower() == 'lan':
+                print translate("NETFile", "Warning: connections to device %s might not work properly and have to be removed manually by editing the topology file in a text editor") % devicename
 
             if isinstance(device, lib.Router):
                 platform = device.model
@@ -728,7 +742,8 @@ class NETFile(object):
                 keys = device.mapping.keys()
                 keys.sort()
                 for port in keys:
-                    (porttype, vlan, nio, twosided) = device.mapping[port]
+                    (porttype, tmpvlan, nio, twosided) = device.mapping[port]
+                    vlan = int(tmpvlan)
                     if not config['vlans'].has_key(vlan):
                         config['vlans'][vlan] = []
                     if twosided:
@@ -748,6 +763,29 @@ class NETFile(object):
                     id = int(match_obj.group(1))
                     if id > max_ethsw_id:
                         max_ethsw_id = id
+                        
+            elif isinstance(device, lib.Hub):
+
+                node = self.create_node(device, 'Ethernet hub', 'Hub ' + device.name)
+                self.configure_node(node, device)
+                config = {}
+                keys = device.nios.keys()
+                keys.sort()
+                config['ports'] = range(1, len(keys) + 1)
+                for port in keys:
+                    nio = device.nios[port]
+                    if nio.config_info().lower()[:3] == 'nio':
+                        cloud = self.create_cloud(nio.config_info(), device.name, str(port))
+                        globals.GApp.topology.recordLink(node.id, str(port), cloud.id, nio.config_info(), node, cloud)
+                        cloud.startNode()
+                node.set_config(config)
+                node.set_hypervisor(device.dynamips)
+                self.populate_connection_list_for_emulated_switch(device, connection_list)
+                match_obj = hub_hostname_re.match(node.hostname)
+                if match_obj:
+                    id = int(match_obj.group(1))
+                    if id > max_hub_id:
+                        max_hub_id = id
 
             elif isinstance(device, lib.FRSW):
 
@@ -861,6 +899,8 @@ class NETFile(object):
             init_router_id(max_router_id + 1)
         if max_ethsw_id != -1:
             init_ethsw_id(max_ethsw_id + 1)
+        if max_hub_id != -1:
+            init_hub_id(max_hub_id + 1)
         if max_frsw_id != -1:
             init_frsw_id(max_frsw_id + 1)
         if max_atmsw_id != -1:
@@ -950,7 +990,7 @@ class NETFile(object):
                     device.stop()
             return
         try:
-            f = open(file_path, 'w') #export_router_config
+            f = open(file_path, 'w')  #export_router_config
             f.write(config)
             f.close()
             device.cnfg = file_path
@@ -962,13 +1002,14 @@ class NETFile(object):
     def export_net_file(self, path, auto=False):
         """ Export a .net file
         """
+
         # remove unused hypervisors
         hypervisors = self.dynagen.dynamips.copy()
         for (name, hypervisor) in hypervisors.iteritems():
             if isinstance(hypervisor, lib.Dynamips) and len(hypervisor.devices) == 0:
                 has_ethsw = False
                 for item in globals.GApp.topology.items():
-                    if isinstance(item, ETHSW) and item.hypervisor and item.hypervisor == hypervisor:
+                    if (isinstance(item, ETHSW) or isinstance(item, Hub)) and item.hypervisor and item.hypervisor == hypervisor:
                         has_ethsw = True
                         break
                 if not has_ethsw:
@@ -995,8 +1036,6 @@ class NETFile(object):
                     item.updateToolTips()
                     globals.GApp.mainWindow.treeWidget_TopologySummary.changeNodeStatus(item.hostname, item.state)
                     continue
-        print ""
-
         note_nb = 1
         shape_nb = 1
         pix_nb = 1
@@ -1029,7 +1068,7 @@ class NETFile(object):
                 if connections:
                     config['connections'] = connections.strip()
             # record notes
-            elif isinstance(item, Annotation): #and item.autoGenerated == False:
+            elif isinstance(item, Annotation):  #and item.autoGenerated == False:
                 if not self.dynagen.running_config.has_key('GNS3-DATA'):
                     self.dynagen.running_config['GNS3-DATA'] = {}
                 self.dynagen.running_config['GNS3-DATA']['NOTE ' + str(note_nb)] = {}
@@ -1139,7 +1178,7 @@ class NETFile(object):
                     if zvalue != 0:
                         self.dynagen.running_config[item.d][item.get_running_config_name()]['z'] = zvalue
                     # record hostname x & y positions
-                    if item.hostname_xpos and item.hostname_ypos: #and \
+                    if item.hostname_xpos and item.hostname_ypos:  #and \
                         self.dynagen.running_config[item.d][item.get_running_config_name()]['hx'] = item.hostname_xpos
                         self.dynagen.running_config[item.d][item.get_running_config_name()]['hy'] = item.hostname_ypos
                 except:
@@ -1202,8 +1241,8 @@ class NETFile(object):
 
                 for model in dynagen_namespace.DEVICETUPLE:
                     if config.has_key(model):
-                        # ASA has no image
-                        if model == '5520':
+                        # ASA and AWP has no image
+                        if model == '5520' or model == 'Soft32':
                             config[model]['initrd'] = self.convert_to_relpath(config[model]['initrd'], path)
                             config[model]['kernel'] = self.convert_to_relpath(config[model]['kernel'], path)
                         # IDS-4215 has no default image

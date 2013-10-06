@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -26,7 +25,7 @@ import GNS3.Dynagen.dynamips_lib as lib
 import GNS3.Telnet as console
 from PyQt4 import QtGui
 from GNS3.Node.AbstractNode import AbstractNode
-from GNS3.Defaults.AnyEmuDefaults import AnyEmuDefaults, PIXDefaults, ASADefaults, JunOSDefaults, QemuDefaults, IDSDefaults
+from GNS3.Defaults.AnyEmuDefaults import AnyEmuDefaults, PIXDefaults, ASADefaults, AWPDefaults, JunOSDefaults, QemuDefaults, IDSDefaults
 from GNS3.Utils import translate, debug, error
 
 emu_id = 1
@@ -72,8 +71,11 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
             'ram',
             'image',
             'nics',
+            'usermod',
             'netcard',
+            'flavor',
             'kvm',
+            'monitor',
             'options',
             ]
 
@@ -224,6 +226,10 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
             QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyEmuDevice", "New hostname"),
                                        translate("AnyEmuDevice", "Cannot rename a connected emulated device"))
             return
+#         if self.hostname != new_hostname:
+#             self.emudev.rename(new_hostname)
+#             self.set_hostname(new_hostname)
+
         self.delete_emudev()
         if self.hostname != new_hostname:
             try:
@@ -278,8 +284,8 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
             if devdefaults[model] == {} and not devdefaults[model].has_key('image'):
                 error('Create a defaults section for ' + model + ' first! Minimum setting is image name')
                 return False
-            # check if an image has been configured first (not for ASA and IDS)
-            elif not devdefaults[model].has_key('image') and model != '5520' and model != 'IDS-4215':
+            # check if an image has been configured first (not for ASA, AWP and IDS)
+            elif not devdefaults[model].has_key('image') and model != '5520' and model != 'Soft32' and model != 'IDS-4215':
                 error('Specify image name for ' + model + ' device first!')
                 return False
         else:
@@ -312,6 +318,8 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
         try:
             if self.emudev.state == 'stopped':
                 self.emudev.start()
+            elif self.emudev.state == 'suspended':
+                self.emudev.resume()
         except:
             if progress:
                 raise
@@ -341,7 +349,16 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
         """ Suspend this node
         """
 
-        pass
+        if self.emudev.state == 'running':
+            try:
+                self.emudev.state
+            except:
+                if progress:
+                    raise
+            self.suspendInterfaces()
+            self.state = self.emudev.state
+            self.updateToolTips()
+            globals.GApp.mainWindow.treeWidget_TopologySummary.changeNodeStatus(self.hostname, self.emudev.state)
 
     def reloadNode(self, progress=False):
         """ Reload this node
@@ -381,9 +398,9 @@ class AnyEmuDevice(AbstractNode, AnyEmuDefaults):
     def changeConsolePort(self):
         """ Called to change the console port
         """
-
+        
         if self.emudev.state != 'stopped':
-            QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyEmuDevice", "Console"), translate("AnyEmuDevice", "Cannot change the console port while the node is running"))
+            QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyEmuDevice", "Console port"), translate("AnyEmuDevice", "Cannot change the console port while the node is running"))
             return
         AbstractNode.changeConsolePort(self)
 
@@ -445,6 +462,47 @@ class ASA(AnyEmuDevice, ASADefaults):
         self.state = 'running'
         globals.GApp.mainWindow.treeWidget_TopologySummary.changeNodeStatus(self.hostname, 'running')
 
+class AWP(AnyEmuDevice, AWPDefaults):
+    instance_counter = 0
+    model = 'Soft32'
+    basehostname = 'AWP'
+    friendly_name ='AWP Router'
+
+    def __init__(self, *args, **kwargs):
+        AnyEmuDevice.__init__(self, *args, **kwargs)
+        AWPDefaults.__init__(self)
+        self.emudev_options.extend([
+            'initrd',
+            'kernel',
+            'rel',
+            'kernel_cmdline',
+            ])
+        debug('Hello, I have initialized and my model is %s' % self.model)
+
+    def _make_devinstance(self, qemu_name):
+        from GNS3.Dynagen import qemu_lib
+        return qemu_lib.AWP(self.dynagen.dynamips[qemu_name], self.hostname)
+
+    def startNode(self, progress=False):
+        """ Start the node
+        """
+
+        if not self.emudev.initrd or not self.emudev.kernel:
+            print translate(self.basehostname, "%s: no device initrd or kernel") % self.hostname
+            return
+        try:
+            if self.emudev.state == 'stopped':
+                self.emudev.start()
+        except:
+            if progress:
+                raise
+            else:
+                return
+
+        self.startupInterfaces()
+        self.state = 'running'
+        globals.GApp.mainWindow.treeWidget_TopologySummary.changeNodeStatus(self.hostname, 'running')
+
 class JunOS(AnyEmuDevice, JunOSDefaults):
 
     instance_counter = 0
@@ -455,6 +513,7 @@ class JunOS(AnyEmuDevice, JunOSDefaults):
     def __init__(self, *args, **kwargs):
         AnyEmuDevice.__init__(self, *args, **kwargs)
         JunOSDefaults.__init__(self)
+        self.unbased = False
         debug('Hello, I have initialized and my model is %s' % self.model)
 
     def _make_devinstance(self, qemu_name):
@@ -471,6 +530,7 @@ class IDS(AnyEmuDevice, IDSDefaults):
     def __init__(self, *args, **kwargs):
         AnyEmuDevice.__init__(self, *args, **kwargs)
         IDSDefaults.__init__(self)
+        self.unbased = False
         self.emudev_options.extend([
             'image1',
             'image2',
@@ -489,6 +549,7 @@ class QemuDevice(AnyEmuDevice, QemuDefaults):
     friendly_name ='Qemu Emulated System'
 
     def __init__(self, *args, **kwargs):
+        self.unbased = False
         AnyEmuDevice.__init__(self, *args, **kwargs)
         QemuDefaults.__init__(self)
         debug('Hello, I have initialized and my model is %s' % self.model)

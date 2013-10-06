@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -21,7 +20,7 @@
 
 import os
 import GNS3.Globals as globals
-from GNS3.Config.Objects import iosImageConf, hypervisorConf, libraryConf, recentFilesConf, qemuImageConf, pixImageConf, junosImageConf, asaImageConf, idsImageConf, vboxImageConf
+from GNS3.Config.Objects import iosImageConf, hypervisorConf, libraryConf, recentFilesConf, qemuImageConf, pixImageConf, junosImageConf, asaImageConf, awprouterImageConf, idsImageConf, vboxImageConf
 from GNS3.Globals.Symbols import SYMBOLS, SYMBOL_TYPES
 from GNS3.Node.DecorativeNode import DecorativeNode
 from PyQt4 import QtCore
@@ -167,6 +166,9 @@ class GNS_Conf(object):
                 continue
 
             if len(img_hypervisors) == 0:
+                #if globals.GApp.systconf['dynamips'].HypervisorManager_binding == '0.0.0.0':
+                #    img_ref = "127.0.0.1:" + img_filename
+                #else:
                 img_ref = globals.GApp.systconf['dynamips'].HypervisorManager_binding + ":" + img_filename
             else:
                 if len(img_hypervisors) > 1:
@@ -182,6 +184,8 @@ class GNS_Conf(object):
             conf.platform = str(c.get(cgroup + "/platform", ''))
             conf.chassis = str(c.get(cgroup + "/chassis", ''))
             conf.idlepc = str(c.get(cgroup + "/idlepc", ''))
+            conf.idlemax = int(c.get(cgroup + "/idlemax", 1500))
+            conf.idlesleep = int(c.get(cgroup + "/idlesleep", 30))
             conf.default_ram = int(c.get(cgroup + "/default_ram", 0))
             conf.default =  c.value(cgroup + "/default", QtCore.QVariant(False)).toBool()
             conf.hypervisors = img_hypervisors
@@ -208,7 +212,7 @@ class GNS_Conf(object):
             hyp_port = c.get(cgroup + "/port",  '7200')
             hyp_host = c.get(cgroup + "/host", unicode(''))
             hyp_wdir = c.get(cgroup + "/working_directory", unicode(''))
-            hyp_baseUDP = c.get(cgroup + "/base_udp", '10000')
+            hyp_baseUDP = c.get(cgroup + "/base_udp", '10001')
             hyp_baseConsole = c.get(cgroup + "/base_console", '2000')
             hyp_baseAUX = c.get(cgroup + "/base_aux", '0')
 
@@ -252,9 +256,12 @@ class GNS_Conf(object):
             conf.filename = c.get(cgroup + "/filename", unicode(''))
             conf.memory = int(c.get(cgroup + "/memory", 256))
             conf.nic_nb = int(c.get(cgroup + "/nic_nb", 6))
+            conf.usermod = c.value(cgroup + "/usermod", QtCore.QVariant(False)).toBool()
             conf.nic = str(c.get(cgroup + "/nic", 'rtl8139'))
+            conf.flavor = str(c.get(cgroup + "/flavor", 'Default'))
             conf.options = str(c.get(cgroup + "/options", ''))
             conf.kvm = c.value(cgroup + "/kvm", QtCore.QVariant(False)).toBool()
+            conf.monitor = c.value(cgroup + "/monitor", QtCore.QVariant(False)).toBool()
             globals.GApp.qemuimages[conf.name] = conf
 
             if conf.id >= globals.GApp.qemuimages_ids:
@@ -343,9 +350,11 @@ class GNS_Conf(object):
             conf.filename = c.get(cgroup + "/filename", unicode(''))
             conf.memory = int(c.get(cgroup + "/memory", 128))
             conf.nic_nb = int(c.get(cgroup + "/nic_nb", 6))
+            conf.usermod = c.value(cgroup + "/usermod", QtCore.QVariant(False)).toBool()
             conf.nic = str(c.get(cgroup + "/nic", 'e1000'))
             conf.options = str(c.get(cgroup + "/options", ''))
             conf.kvm = c.value(cgroup + "/kvm", QtCore.QVariant(False)).toBool()
+            conf.monitor = c.value(cgroup + "/monitor", QtCore.QVariant(False)).toBool()
             globals.GApp.junosimages[conf.name] = conf
 
             if conf.id >= globals.GApp.junosimages_ids:
@@ -371,9 +380,11 @@ class GNS_Conf(object):
             conf.name = c.get(cgroup + "/name", unicode(''))
             conf.memory = int(c.get(cgroup + "/memory", 256))
             conf.nic_nb = int(c.get(cgroup + "/nic_nb", 6))
+            conf.usermod = c.value(cgroup + "/usermod", QtCore.QVariant(False)).toBool()
             conf.nic = str(c.get(cgroup + "/nic", 'e1000'))
             conf.options = str(c.get(cgroup + "/options", ''))
             conf.kvm = c.value(cgroup + "/kvm", QtCore.QVariant(False)).toBool()
+            conf.monitor = c.value(cgroup + "/monitor", QtCore.QVariant(False)).toBool()
             conf.initrd = c.get(cgroup + "/initrd", unicode(''))
             conf.kernel = c.get(cgroup + "/kernel", unicode(''))
             conf.kernel_cmdline = c.get(cgroup + "/kernel_cmdline", unicode(''))
@@ -381,6 +392,37 @@ class GNS_Conf(object):
 
             if conf.id >= globals.GApp.asaimages_ids:
                 globals.GApp.asaimages_ids = conf.id + 1
+
+    def AWP_images(self):
+        """ Load AWP images settings from config file
+        """
+
+        # Loading AWP image conf
+        basegroup = "AWP.images"
+        c = ConfDB()
+        c.beginGroup(basegroup)
+        childGroups = c.childGroups()
+        c.endGroup()
+        for id in childGroups:
+            cgroup = basegroup + '/' + id
+
+            conf = awprouterImageConf()
+            conf.id = int(id)
+            conf.name = c.get(cgroup + "/name", unicode(''))
+            conf.memory = int(c.get(cgroup + "/memory", 256))
+            conf.nic_nb = int(c.get(cgroup + "/nic_nb", 6))
+            conf.usermod = c.value(cgroup + "/usermod", QtCore.QVariant(False)).toBool()
+            conf.nic = str(c.get(cgroup + "/nic", 'virtio'))
+            conf.options = str(c.get(cgroup + "/options", ''))
+            conf.kvm = c.value(cgroup + "/kvm", QtCore.QVariant(False)).toBool()
+            conf.initrd = c.get(cgroup + "/initrd", unicode(''))
+            conf.kernel = c.get(cgroup + "/kernel", unicode(''))
+            conf.rel = c.get(cgroup + "/rel", unicode(''))
+            conf.kernel_cmdline = c.get(cgroup + "/kernel_cmdline", unicode(''))
+            globals.GApp.awprouterimages[conf.name] = conf
+
+            if conf.id >= globals.GApp.awprouterimages_ids:
+                globals.GApp.awprouterimages_ids = conf.id + 1
 
     def IDS_images(self):
         """ Load IDS images settings from config file
@@ -404,9 +446,11 @@ class GNS_Conf(object):
             conf.name = c.get(cgroup + "/name", unicode(''))
             conf.memory = int(c.get(cgroup + "/memory", 512))
             conf.nic_nb = int(c.get(cgroup + "/nic_nb", 3))
+            conf.usermod = c.value(cgroup + "/usermod", QtCore.QVariant(False)).toBool()
             conf.nic = str(c.get(cgroup + "/nic", 'e1000'))
             conf.options = str(c.get(cgroup + "/options", ''))
             conf.kvm = c.value(cgroup + "/kvm", QtCore.QVariant(False)).toBool()
+            conf.monitor = c.value(cgroup + "/monitor", QtCore.QVariant(False)).toBool()
             globals.GApp.idsimages[conf.name] = conf
 
             if conf.id >= globals.GApp.idsimages_ids:

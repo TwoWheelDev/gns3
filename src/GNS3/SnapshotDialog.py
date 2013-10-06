@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -21,9 +20,10 @@
 
 import os, glob, re, shutil
 import GNS3.Globals as globals
-from GNS3.Utils import translate
+from GNS3.Utils import translate, debug
 from PyQt4 import QtCore, QtGui
 from GNS3.Ui.Form_Snapshots import Ui_Snapshots
+
 
 class SnapshotDialog(QtGui.QDialog, Ui_Snapshots):
     """ SnapshotDialog class
@@ -36,7 +36,7 @@ class SnapshotDialog(QtGui.QDialog, Ui_Snapshots):
 
         self.connect(self.pushButtonCreate, QtCore.SIGNAL('clicked()'), self.slotCreateSnapshot)
         self.connect(self.pushButtonDelete, QtCore.SIGNAL('clicked()'), self.slotDeleteSnapshot)
-        self.connect(self.pushButtonLoad, QtCore.SIGNAL('clicked()'), self.slotLoadSnapshot)
+        self.connect(self.pushButtonRestore, QtCore.SIGNAL('clicked()'), self.slotRestoreSnapshot)
         self.listSnaphosts()
 
     def listSnaphosts(self):
@@ -44,10 +44,23 @@ class SnapshotDialog(QtGui.QDialog, Ui_Snapshots):
         self.SnapshotList.clear()
         if not globals.GApp.workspace.projectFile:
             return
+        snapregexp = re.compile(r"""^(.*)_(.*)_snapshot_([0-9]+)_([0-9]+)""")
         projectDir = os.path.dirname(globals.GApp.workspace.projectFile)
+        snapshotDir = os.path.join(os.path.dirname(globals.GApp.workspace.projectFile), 'snapshots')
         snapshots = glob.glob(os.path.normpath(projectDir) + os.sep + "*_snapshot_*")
+
+        # Backward compatibility: move snapshots to the snapshot directory (new location in GNS3 0.8.5)
+        try:
+            if snapshots and not os.path.exists(snapshotDir):
+                os.mkdir(snapshotDir)
+            for entry in snapshots:
+                shutil.move(entry, snapshotDir)
+                debug("Moving %s to the snapshot directory" % entry)
+        except (OSError, IOError), e:
+            debug("Cound't move snapshots to the snapshot directory")
+
+        snapshots = glob.glob(os.path.normpath(snapshotDir) + os.sep + "*_snapshot_*")
         for entry in snapshots:
-            snapregexp = re.compile(r"""^(.*)_(.*)_snapshot_([0-9]+)_([0-9]+)""")
             match_obj = snapregexp.match(entry)
             if match_obj:
                 name = match_obj.group(2)
@@ -60,16 +73,15 @@ class SnapshotDialog(QtGui.QDialog, Ui_Snapshots):
 
     def slotCreateSnapshot(self):
 
-
         (text, ok) = QtGui.QInputDialog.getText(globals.GApp.mainWindow, translate("AbstractNode", "Snapshot name"),
                                     translate("AbstractNode", "Snapshot name:"), QtGui.QLineEdit.Normal, "Unnamed")
 
         if ok and text:
             snapshot_name = unicode(text)
         else:
-            snapshot_name = "Unnamed"
+            return
 
-        if not globals.GApp.workspace.projectFile:# or not globals.GApp.workspace.projectWorkdir:
+        if not globals.GApp.workspace.projectFile:  # or not globals.GApp.workspace.projectWorkdir:
             QtGui.QMessageBox.critical(self, translate("SnapshotDialog", "Project"), translate("SnapshotDialog", "Create a project first!"))
             return
         globals.GApp.workspace.createSnapshot(snapshot_name)
@@ -84,13 +96,24 @@ class SnapshotDialog(QtGui.QDialog, Ui_Snapshots):
             shutil.rmtree(snapshot_path, ignore_errors=True)
             self.listSnaphosts()
 
-    def slotLoadSnapshot(self):
+    def slotRestoreSnapshot(self):
 
         items = self.SnapshotList.selectedItems()
         if len(items):
             item = items[0]
             path = unicode(item.data(QtCore.Qt.UserRole).toString())
-            globals.GApp.workspace.load_netfile(path)
-            globals.GApp.workspace.projectConfigs = os.path.dirname(path) + os.sep + 'configs'
-            globals.GApp.workspace.projectWorkdir = os.path.dirname(path) + os.sep + 'working'
-            globals.GApp.workspace.projectFile = path
+            dirname = os.path.basename(os.path.dirname(path))
+            snapregexp = re.compile(r"""^(.*)_(.*)_snapshot_([0-9]+)_([0-9]+)""")
+            match_obj = snapregexp.match(dirname)
+            if match_obj:
+                name = os.path.basename(match_obj.group(2))
+            else:
+                name = translate("SnapshotDialog", "Unknown")
+            reply = QtGui.QMessageBox.question(self, translate("SnapshotDialog", "Message"), translate("SnapshotDialog", "This will discard any changes made to your project since the snapshot \"%s\" was taken?") % name,
+                                               QtGui.QMessageBox.Ok, QtGui.QMessageBox.Cancel)
+            if reply == QtGui.QMessageBox.Cancel:
+                return
+            #self.hide()
+            globals.GApp.workspace.restoreSnapshot(path)
+            self.accept()
+    

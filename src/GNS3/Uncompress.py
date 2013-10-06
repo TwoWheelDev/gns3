@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2012 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -22,6 +21,7 @@
 # Functions to uncompress IOS images
 
 import os, mmap, zipfile, shutil, tempfile
+
 
 def isIOScompressed(ios_image):
     """ Check either a IOS image is compress or not
@@ -51,6 +51,7 @@ def isIOScompressed(ios_image):
     if pos > 0 and not (multiple_zipped_files > 0 and not cisco_string > 0):
         return True
     return False
+
 
 def uncompressIOS(ios_image, dest_file):
 

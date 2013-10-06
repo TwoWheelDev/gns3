@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -24,6 +23,7 @@
 from PyQt4 import QtGui, QtCore
 from GNS3.Ui.Form_PreferencesDialog import Ui_PreferencesDialog
 from GNS3.Utils import translate
+import GNS3.Globals as globals
 
 class PreferencesDialog(QtGui.QDialog, Ui_PreferencesDialog):
 
@@ -40,6 +40,7 @@ class PreferencesDialog(QtGui.QDialog, Ui_PreferencesDialog):
                         'Capture',
                         'Qemu',
                         'VirtualBox',
+                        #'DeployementWizard' #FIXME: TEMP DISABLED FOR GNS3 0.8.4 RC1.
                         ]
 
         QtGui.QDialog.__init__(self)
@@ -47,7 +48,7 @@ class PreferencesDialog(QtGui.QDialog, Ui_PreferencesDialog):
 
         self.connect(self.listWidget, QtCore.SIGNAL('currentItemChanged(QListWidgetItem *, QListWidgetItem *)'), self.configItemChanged)
         self.connect(self.buttonBox.button(QtGui.QDialogButtonBox.Apply), QtCore.SIGNAL('clicked()'), self.__applyChanges)
-        self.connect(self.buttonBox.button(QtGui.QDialogButtonBox.Ok), QtCore.SIGNAL('clicked()'), self.__applyChanges)
+#         self.connect(self.buttonBox.button(QtGui.QDialogButtonBox.Ok), QtCore.SIGNAL('clicked()'), self.__applyChanges)
 
         # Init dialog
         self.__initDialog()
@@ -79,11 +80,14 @@ class PreferencesDialog(QtGui.QDialog, Ui_PreferencesDialog):
         """ Save change for all item present into the Dialog
         All widget need to implement a method `saveConf' for this to work.
         """
+
         lnum = 0
         for itemName in self.__prefsList:
             widget = self.stackedWidget.widget(lnum)
-            widget.saveConf()
+            if widget.saveConf() == False:
+                return False
             lnum += 1
+        return True
 
     def __loadWidget(self, widgetPrefix, widgetName):
         """ Load a config widget from GNS3.Ui.ConfigurationPages
@@ -133,3 +137,18 @@ class PreferencesDialog(QtGui.QDialog, Ui_PreferencesDialog):
         if widget_curr is None:
             widget_curr = widget_prev
         self.__raiseWidgetByNum(self.listWidget.row(widget_curr))
+
+    def reject(self):
+        """ Refresh devices list when closing the window
+        """
+   
+        globals.GApp.mainWindow.nodesDock.populateNodeDock(globals.GApp.workspace.dockWidget_NodeTypes.windowTitle())
+        QtGui.QDialog.reject(self)
+   
+    def accept(self):
+        """ Refresh devices list when closing the window
+        """
+   
+        globals.GApp.mainWindow.nodesDock.populateNodeDock(globals.GApp.workspace.dockWidget_NodeTypes.windowTitle())
+        if self.__applyChanges():
+            QtGui.QDialog.accept(self)

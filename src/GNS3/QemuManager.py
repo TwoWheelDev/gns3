@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -29,6 +28,7 @@ from PyQt4 import QtCore, QtGui
 from GNS3.Utils import translate, debug, killAll
 from __main__ import VERSION
 
+
 class QemuManager(object):
     """ QemuManager class
     """
@@ -42,7 +42,6 @@ class QemuManager(object):
     def __del__(self):
         """ Kill Qemu
         """
-
         if self.proc:
             self.proc.kill()
 
@@ -54,7 +53,8 @@ class QemuManager(object):
         count = 15
         progress = None
         connection_success = False
-        timeout = 60.0
+        timeout = 10
+        s = None
         debug("Qemu manager: connecting to %s on port %i" % (binding, self.port))
         for nb in range(count + 1):
             if nb == 3:
@@ -77,7 +77,7 @@ class QemuManager(object):
             connection_success = True
             break
 
-        if connection_success:
+        if connection_success and s:
             s.close()
             time.sleep(0.2)
         else:
@@ -94,12 +94,12 @@ class QemuManager(object):
     def startQemu(self, port, binding=None):
         """ Start Qemu
         """
-
+        self.port = port
         if binding == None:
             binding = globals.GApp.systconf['qemu'].QemuManager_binding
-        self.port = port
+        
         if self.proc and self.proc.state():
-            debug("QemuManager: Qemu is already started with pid %i" % int(self.proc.pid()))
+            debug('QemuManager: Qemu is already started with pid ' + str(self.proc.pid()))
             return True
 
         self.proc = QtCore.QProcess(globals.GApp.mainWindow)
@@ -111,7 +111,7 @@ class QemuManager(object):
             self.proc.setWorkingDirectory(globals.GApp.systconf['qemu'].qemuwrapper_workdir)
 
         # test if Qemu is already running on this port
-        timeout = 60.0
+        timeout = 10
         try:
             s = socket.create_connection((binding, self.port), timeout)
             QtGui.QMessageBox.warning(globals.GApp.mainWindow, 'Qemu Manager',
@@ -122,8 +122,7 @@ class QemuManager(object):
             pass
 
         # start Qemuwrapper, use python on all platform but Windows (in release mode)
-        binding = globals.GApp.systconf['qemu'].QemuManager_binding
-        #print "ADEBUG: qemuwrapper_path = %s" % str(globals.GApp.systconf['qemu'].qemuwrapper_path)
+        #binding = globals.GApp.systconf['qemu'].QemuManager_binding
         if sys.platform.startswith('win') and (globals.GApp.systconf['qemu'].qemuwrapper_path.split('.')[-1] == 'exe'):
             self.proc.start('"' + globals.GApp.systconf['qemu'].qemuwrapper_path + '"', ['--listen', binding, '--port', str(self.port), '--no-path-check'])
         elif hasattr(sys, "frozen"):
@@ -137,13 +136,12 @@ class QemuManager(object):
 
         self.waitQemu(binding)
         if self.proc and self.proc.state():
-            debug("QemuManager: Qemu has been started with pid %i"  % int(self.proc.pid()))
+            debug('QemuManager: Qemu has been started with pid ' + str(self.proc.pid()))
         return True
 
     def stopQemu(self):
         """ Stop Qemu
         """
-
         for hypervisor in globals.GApp.dynagen.dynamips.values():
             if isinstance(hypervisor, qlib.Qemu):
                 try:
@@ -152,24 +150,23 @@ class QemuManager(object):
                 except:
                     continue
         if self.proc and self.proc.state():
-            debug("QemuManager: stop Qemu with pid %i" % int(self.proc.pid()))
+            debug('QemuManager: stop Qemu with pid ' + str(self.proc.pid()))
             self.proc.terminate()
             time.sleep(0.5)
             self.proc.close()
         self.proc = None
 
-    def preloadQemuwrapper(self):
+    def preloadQemuwrapper(self, port):
         """ Preload Qemuwrapper
         """
-
         proc = QtCore.QProcess(globals.GApp.mainWindow)
         binding = globals.GApp.systconf['qemu'].QemuManager_binding
+        self.port = port
 
         if globals.GApp.systconf['qemu'].qemuwrapper_workdir:
             if not os.access(globals.GApp.systconf['qemu'].qemuwrapper_workdir, os.F_OK | os.W_OK):
-                QtGui.QMessageBox.warning(globals.GApp.mainWindow, 'Qemu Manager',
-                                          translate("QemuManager", "Working directory %s seems to not exist or be writable, please check") % globals.GApp.systconf['qemu'].qemuwrapper_workdir)
-                return False
+                raise Exception(translate("QemuManager", "Working directory %s seems to not exist or be writable, please check") %
+                                globals.GApp.systconf['qemu'].qemuwrapper_workdir)
 
             proc.setWorkingDirectory(globals.GApp.systconf['qemu'].qemuwrapper_workdir)
 
@@ -183,12 +180,12 @@ class QemuManager(object):
             proc.start(sys.executable,  [globals.GApp.systconf['qemu'].qemuwrapper_path, '--listen', binding, '--no-path-check'])
 
         if proc.waitForStarted() == False:
-            return False
+            raise Exception(translate('QemuManager', 'Could not start qemuwrapper.py'))
 
-        # give 5 seconds to the hypervisor to accept connections
-        count = 5
+        # give 3 seconds to the hypervisor to accept connections
+        count = 3
         connection_success = False
-        timeout = 60.0
+        timeout = 10
         for nb in range(count + 1):
             try:
                 s = socket.create_connection((binding, self.port), timeout)
@@ -197,7 +194,6 @@ class QemuManager(object):
                 continue
             connection_success = True
             break
-        s.close()
         if connection_success:
             # check qemuwrapper version
             proc.waitForReadyRead(5000)
@@ -208,14 +204,15 @@ class QemuManager(object):
                 ver = QtCore.QByteArray(")" + os.linesep)
                 endVerOffset = output.indexOf(ver, verOffset) - verOffset
                 wrapperVer = output.mid(verOffset, endVerOffset)
+                # AWP implementation case
+                if wrapperVer[-4:] == '-atl': 
+                    wrapperVer = wrapperVer[:-4] # In case of ATL-specific wrapper
                 if wrapperVer != VERSION:
-                    print 'QemuManager: qemuwrapper version check failed: (' + wrapperVer  + '|' + VERSION + ')'
-                    print 'QemuManager: please update your qemuwrapper and check its path in the settings'
                     proc.close()
-                    return False
+                    raise Exception(translate('QemuManager', 'Bad qemuwrapper.py version, expected (%s) got (%s)') % (VERSION, wrapperVer))
 
             proc.close()
             return True
-        if proc.state():
-            proc.close()
-        return False
+        elif proc.state():
+                proc.close()
+        raise Exception(translate('QemuManager', 'Could not connect to qemuwrapper on %s:%s' % (binding, self.port)))

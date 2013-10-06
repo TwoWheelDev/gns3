@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -140,6 +139,12 @@ class asaImageConf(ConfigObject):
         self.conf = Defaults.conf_asaImage_defaults.copy()
         self.types = Defaults.conf_asaImage_types
 
+class awprouterImageConf(ConfigObject):
+    def __init__(self):
+        ConfigObject.__init__(self)
+        self.conf = Defaults.conf_awprouterImage_defaults.copy()
+        self.types = Defaults.conf_awprouterImage_types
+
 class idsImageConf(ConfigObject):
     def __init__(self):
         ConfigObject.__init__(self)
@@ -175,3 +180,9 @@ class systemVBoxConf(ConfigObject):
         ConfigObject.__init__(self)
         self.conf = Defaults.conf_systemVBox_defaults.copy()
         self.types = Defaults.conf_systemVBox_types
+
+class systemDeployementWizardConf(ConfigObject):
+    def __init__(self):
+        ConfigObject.__init__(self)
+        self.conf = Defaults.conf_systemDeployementWizard_defaults.copy()
+        self.types = Defaults.conf_systemDeployementWizard_types

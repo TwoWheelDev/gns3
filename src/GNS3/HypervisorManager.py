@@ -25,7 +25,7 @@ import GNS3.Dynagen.dynamips_lib as lib
 from PyQt4 import QtCore, QtGui
 from GNS3.Utils import translate, debug, killAll
 from GNS3.Node.IOSRouter import IOSRouter
-from distutils.version import LooseVersion
+from distutils.version import StrictVersion
 
 class HypervisorManager(object):
     """ HypervisorManager class
@@ -61,7 +61,10 @@ class HypervisorManager(object):
         """
 
         if binding == None:
-            binding = self.dynamips.HypervisorManager_binding
+            if self.dynamips.HypervisorManager_binding and self.dynamips.HypervisorManager_binding != '0.0.0.0':
+                binding = self.dynamips.HypervisorManager_binding
+            else:
+                binding = '127.0.0.1'
 
         proc = QtCore.QProcess(globals.GApp.mainWindow)
 
@@ -107,14 +110,14 @@ class HypervisorManager(object):
         try:
             # start dynamips in hypervisor mode (-H)
             # Dynamips version 0.2.8-RC3 and before cannot accept a specific port when binding on a chosen address with param -H <IP address:port> (bug is inside Dynamips).
-            if self.dynamips.detected_version and LooseVersion(self.dynamips.detected_version) > '0.2.8-RC3':
+            if self.dynamips.detected_version and StrictVersion(self.dynamips.detected_version.replace("-RC", "b").split('-', 1)[0]) > '0.2.8b3' and self.dynamips.HypervisorManager_binding != '0.0.0.0':
                 debug("Starting Dynamips with -H %s:%i" % (binding, port))
                 proc.start(self.hypervisor_path,  ['-H', binding + ':' + str(port)])
             else:
-                debug("Starting Dynamips with -H %i (old way with Dynamips version 0.2.8-RC3 and before)" % port)
+                debug("Starting Dynamips with -H %i" % port)
                 proc.start(self.hypervisor_path,  ['-H', str(port)])
         except:
-            debug('Exception with LooseVersion()')
+            debug('Exception with StrictVersion()')
             proc.start(self.hypervisor_path,  ['-H', str(port)])
 
         if proc.waitForStarted() == False:
@@ -135,7 +138,11 @@ class HypervisorManager(object):
         """
         
         if binding == None:
-            binding = self.dynamips.HypervisorManager_binding
+            if self.dynamips.HypervisorManager_binding and self.dynamips.HypervisorManager_binding != '0.0.0.0':
+                binding = self.dynamips.HypervisorManager_binding
+            else:
+                debug("Hypervisor manager: warning: no default binding, defaulting to 127.0.0.1")
+                binding = '127.0.0.1'
 
         last_exception = None
         # give 15 seconds to the hypervisor to accept connections
@@ -327,16 +334,21 @@ class HypervisorManager(object):
         try:
             # start dynamips in hypervisor mode (-H)
             # Dynamips version 0.2.8-RC3 and before cannot accept a specific port when binding on a chosen address with param -H <IP address:port> (bug is inside Dynamips).
-            if self.dynamips.detected_version and LooseVersion(self.dynamips.detected_version) > '0.2.8-RC3':
+            if self.dynamips.detected_version and StrictVersion(self.dynamips.detected_version.replace("-RC", "b").split('-', 1)[0]) > '0.2.8b3' and self.dynamips.HypervisorManager_binding != '0.0.0.0':
                 proc.start(self.hypervisor_path,  ['-H', self.dynamips.HypervisorManager_binding + ':' + str(port)])
             else:
                 proc.start(self.hypervisor_path,  ['-H', str(port)])
         except:
-            debug('Exception with LooseVersion')
+            debug('Exception with StrictVersion')
             proc.start(self.hypervisor_path,  ['-H', str(port)])
 
         if proc.waitForStarted() == False:
             return False
+        
+        if self.dynamips.HypervisorManager_binding != '0.0.0.0':
+            binding = self.dynamips.HypervisorManager_binding
+        else:
+            binding = '127.0.0.1'
 
         # give 5 seconds to the hypervisor to accept connections
         count = 5
@@ -344,7 +356,7 @@ class HypervisorManager(object):
         timeout = 60.0
         for nb in range(count + 1):
             try:
-                s = socket.create_connection((self.dynamips.HypervisorManager_binding, port), timeout)
+                s = socket.create_connection((binding, port), timeout)
             except:
                 time.sleep(1)
                 continue

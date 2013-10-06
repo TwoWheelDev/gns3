@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ConfigurationPages/Form_JunOSPage.ui'
 #
-# Created: Thu Jul 12 21:13:34 2012
+# Created: Mon Sep  9 21:29:23 2013
 #      by: PyQt4 UI code generator 4.8.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -93,6 +93,8 @@ class Ui_JunOSPage(object):
         self.comboBoxNIC.setItemText(6, QtGui.QApplication.translate("JunOSPage", "pcnet", None, QtGui.QApplication.UnicodeUTF8))
         self.comboBoxNIC.addItem(_fromUtf8(""))
         self.comboBoxNIC.setItemText(7, QtGui.QApplication.translate("JunOSPage", "virtio", None, QtGui.QApplication.UnicodeUTF8))
+        self.comboBoxNIC.addItem(_fromUtf8(""))
+        self.comboBoxNIC.setItemText(8, QtGui.QApplication.translate("JunOSPage", "virtio-net-pci", None, QtGui.QApplication.UnicodeUTF8))
         self.gridLayout.addWidget(self.comboBoxNIC, 3, 1, 1, 2)
         self.label_8 = QtGui.QLabel(JunOSPage)
         self.label_8.setText(QtGui.QApplication.translate("JunOSPage", "Qemu Options:", None, QtGui.QApplication.UnicodeUTF8))
@@ -107,11 +109,21 @@ class Ui_JunOSPage(object):
         self.checkBoxKVM.setText(QtGui.QApplication.translate("JunOSPage", "Use KVM (Linux hosts only)", None, QtGui.QApplication.UnicodeUTF8))
         self.checkBoxKVM.setObjectName(_fromUtf8("checkBoxKVM"))
         self.gridLayout.addWidget(self.checkBoxKVM, 5, 0, 1, 2)
+        self.checkBoxUserMod = QtGui.QCheckBox(JunOSPage)
+        self.checkBoxUserMod.setText(QtGui.QApplication.translate("JunOSPage", "Add user network backend", None, QtGui.QApplication.UnicodeUTF8))
+        self.checkBoxUserMod.setChecked(False)
+        self.checkBoxUserMod.setObjectName(_fromUtf8("checkBoxUserMod"))
+        self.gridLayout.addWidget(self.checkBoxUserMod, 6, 0, 1, 3)
+        self.checkBoxMonitor = QtGui.QCheckBox(JunOSPage)
+        self.checkBoxMonitor.setEnabled(True)
+        self.checkBoxMonitor.setText(QtGui.QApplication.translate("JunOSPage", "Monitor mode (pause and resume)", None, QtGui.QApplication.UnicodeUTF8))
+        self.checkBoxMonitor.setObjectName(_fromUtf8("checkBoxMonitor"))
+        self.gridLayout.addWidget(self.checkBoxMonitor, 7, 0, 1, 3)
         spacerItem = QtGui.QSpacerItem(20, 281, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
-        self.gridLayout.addItem(spacerItem, 6, 1, 1, 1)
+        self.gridLayout.addItem(spacerItem, 8, 1, 1, 1)
 
         self.retranslateUi(JunOSPage)
-        self.comboBoxNIC.setCurrentIndex(5)
+        self.comboBoxNIC.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(JunOSPage)
 
     def retranslateUi(self, JunOSPage):

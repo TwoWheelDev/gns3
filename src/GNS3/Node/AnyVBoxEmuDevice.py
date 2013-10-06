@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2011 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -201,9 +200,7 @@ class AnyVBoxEmuDevice(AbstractNode, AnyVBoxEmuDefaults):
 
         assert(self.emu_vboxdev)
         interfaces = []
-        #VBox interfaces: start counting from 1 (e1, e2, e3 ...)
-        #for i in range(self.emu_vboxdev.nics):
-        for i in range(1, self.emu_vboxdev.nics + 1):
+        for i in range(self.emu_vboxdev.nics):
             interfaces.append('e' + str(i))
         return (interfaces)
 
@@ -211,10 +208,10 @@ class AnyVBoxEmuDevice(AbstractNode, AnyVBoxEmuDefaults):
         """ Call AbstractNode method with unavailable_interfaces argument to allow us to "gray out" interface e1 which is managed by VirtualBox GUI (NAT, Bridge, etc.)
         """
 
-        if self.local_config['first_nic_managed']:
+        if not self.local_config['first_nic_managed']:
             AbstractNode.showMenuInterface(self)
         else:
-            AbstractNode.showMenuInterface(self, ['e1'])
+            AbstractNode.showMenuInterface(self, ['e0'])
 
     def get_dynagen_device(self):
         """ Returns the dynagen device corresponding to this bridge
@@ -257,7 +254,11 @@ class AnyVBoxEmuDevice(AbstractNode, AnyVBoxEmuDefaults):
         try:
             self.create_emudev()
             if old_console:
-                self.emu_vboxdev.console = old_console
+                #FIXME: temporary workaround
+                try:
+                    self.emu_vboxdev.console = old_console
+                except:
+                    pass
         except lib.DynamipsError, msg:
             QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyVBoxEmuDevice", "Dynamips error"),  unicode(msg))
             self.delete_emudev()
@@ -400,9 +401,9 @@ class AnyVBoxEmuDevice(AbstractNode, AnyVBoxEmuDefaults):
                 if sys.platform.startswith('win'):
                     pipe_name = r'\\.\pipe\VBOX\%s' % pipe_name
                 elif os.path.exists(self.emu_vboxdev.dynamips.workingdir):
-                    pipe_name = self.emu_vboxdev.dynamips.workingdir + os.sep + "vbox_pipe_to_%s" % pipe_name
+                    pipe_name = self.emu_vboxdev.dynamips.workingdir + os.sep + "pipe_%s" % pipe_name
                 else:
-                    pipe_name = "/tmp/vbox_pipe_to_%s" % pipe_name
+                    pipe_name = "/tmp/pipe_%s" % pipe_name
                 proc = console.pipe_connect(self.hostname, pipe_name)
             else:
                 proc = console.connect(self.emu_vboxdev.dynamips.host, self.emu_vboxdev.console, self.hostname)
@@ -456,9 +457,9 @@ class AnyVBoxEmuDevice(AbstractNode, AnyVBoxEmuDefaults):
     def changeConsolePort(self):
         """ Called to change the console port
         """
-
+        
         if self.emu_vboxdev.state != 'stopped':
-            QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyVBoxEmuDevice", "Console"), translate("AnyVBoxEmuDevice", "Cannot change the console port while the node is running"))
+            QtGui.QMessageBox.critical(globals.GApp.mainWindow, translate("AnyVBoxEmuDevice", "Cannot change the console port while the node is running"))
             return
         AbstractNode.changeConsolePort(self)
 

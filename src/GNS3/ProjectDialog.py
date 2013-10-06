@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -29,9 +28,10 @@ class ProjectDialog(QtGui.QDialog, Ui_NewProject):
     """ ProjectDialog class
     """
 
-    def __init__(self, parent=None, projectFile=None, projectWorkdir=None, projectConfigs=None, newProject=False):
+    def __init__(self, parent=None, projectFile=None, projectWorkdir=None, projectConfigs=None, unbase=False, saveCaptures=False, newProject=False):
 
         QtGui.QDialog.__init__(self, parent)
+        self.newProject = newProject
         self.setupUi(self)
         self.connect(self.NewProject_browser, QtCore.SIGNAL('clicked()'), self.__setProjectDir)
         self.connect(self.pushButtonOpenProject, QtCore.SIGNAL('clicked()'), self.__openProject)
@@ -44,22 +44,56 @@ class ProjectDialog(QtGui.QDialog, Ui_NewProject):
                 projectPath = os.path.dirname(projectFile)
                 projectName = os.path.basename(projectPath)
                 self.ProjectName.setText(projectName)
-                self.ProjectPath.setText(projectPath)
+                general_project_dir = os.path.normpath(globals.GApp.systconf['general'].project_path)
+                if os.path.exists(general_project_dir):
+                    self.ProjectPath.setText(general_project_dir + os.sep + projectName)
+                else:
+                    self.ProjectPath.setText(projectPath)
 
-            if projectWorkdir:
+            if projectWorkdir != None:
                 self.checkBox_WorkdirFiles.setCheckState(QtCore.Qt.Checked)
             else:
                 self.checkBox_WorkdirFiles.setCheckState(QtCore.Qt.Unchecked)
-            if projectConfigs:
-                self.checkBox_ConfigFiles.setCheckState(QtCore.Qt.Checked)
-            else:
-                self.checkBox_ConfigFiles.setCheckState(QtCore.Qt.Unchecked)
 
-    def __setProjectDir(self):
-        """ Open a file dialog for choosing the location of the project directory
+#             if projectConfigs != None:
+#                 self.checkBox_ConfigFiles.setCheckState(QtCore.Qt.Checked)
+#             else:
+#                 self.checkBox_ConfigFiles.setCheckState(QtCore.Qt.Unchecked)
+
+            if unbase:
+                self.unbaseImages.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.unbaseImages.setCheckState(QtCore.Qt.Unchecked)
+            if saveCaptures:
+                self.checkBox_SaveCaptures.setCheckState(QtCore.Qt.Checked)
+            else:
+                self.checkBox_SaveCaptures.setCheckState(QtCore.Qt.Unchecked)
+
+    def keyPressEvent(self, e):
+        """ Reimplementing a basic event handler in order to properly handle escape
         """
 
-        fb = fileBrowser(translate('ProjectDialog', 'Project Directory'), globals.GApp.systconf['general'].project_path, parent=globals.preferencesWindow)
+        if e.key() == QtCore.Qt.Key_Escape:
+            self.close()
+
+    def reject(self):
+        """ Reimplementing a basic event handler in order to properly handle Cancel action
+        """
+
+        self.close()
+
+    def closeEvent(self, wut):
+        """ Called when the user chose to discard the dialog
+        """
+
+        if self.newProject == True:
+            globals.GApp.mainWindow.createProject((None, None, None, False, False))
+
+    def __setProjectDir(self):
+        """ Open a file dialog for choosing the location of the projects directory
+        """
+
+        fb = fileBrowser(translate('ProjectDialog', 'Projects Directory'), globals.GApp.systconf['general'].project_path, parent=globals.preferencesWindow)
         path = fb.getDir()
 
         if path:
@@ -70,7 +104,7 @@ class ProjectDialog(QtGui.QDialog, Ui_NewProject):
                 self.ProjectPath.setText(path)
 
     def __projectNameEdited(self, text):
-        """ Propose a project directory when changing the project name
+        """ Propose a projects directory when changing the project name
         """
 
         self.ProjectPath.clear()
@@ -83,19 +117,27 @@ class ProjectDialog(QtGui.QDialog, Ui_NewProject):
         """ Save project settings
         """
 
-        projectName = unicode(self.ProjectName.text(), 'utf-8', errors='replace')
-        projectDir = os.path.normpath(unicode(self.ProjectPath.text(), 'utf-8', errors='replace'))
+        projectName = unicode(self.ProjectName.text())
+        projectDir = os.path.normpath(unicode(self.ProjectPath.text()))
 
         if not projectName or not projectDir:
-            return (None, None, None)
+            return (None, None, None, False, False)
 
-        if not os.path.exists(projectDir):
+        if os.path.exists(projectDir):
+            
+            reply = QtGui.QMessageBox.question(self, translate('ProjectDialog', 'Projects Directory'), translate('ProjectDialog', "Project directory already exists, overwrite?"),
+                                            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+
+            if reply == QtGui.QMessageBox.No:
+                return (None, None, None, False, False)
+
+        else: 
             try:
                 os.makedirs(projectDir)
             except (OSError, IOError), e:
-                QtGui.QMessageBox.critical(self, translate('ProjectDialog', 'Project Directory'),
+                QtGui.QMessageBox.critical(self, translate('ProjectDialog', 'Projects Directory'),
                                            translate("Workspace", "Cannot create directory %s: %s") % (projectDir, e.strerror))
-                return (None, None, None)
+                return (None, None, None, False, False)
 
         projectFile = projectDir + os.sep + 'topology.net'
         projectFile = os.path.expandvars(os.path.expanduser(projectFile))
@@ -104,15 +146,25 @@ class ProjectDialog(QtGui.QDialog, Ui_NewProject):
             projectWorkdir = os.path.normpath(projectDir + os.sep + 'working')
         else:
             projectWorkdir = None
-        if self.checkBox_ConfigFiles.checkState() == QtCore.Qt.Checked:
-            projectConfigs = os.path.normpath(projectDir + os.sep + 'configs')
+        #if self.checkBox_ConfigFiles.checkState() == QtCore.Qt.Checked:
+        projectConfigs = os.path.normpath(projectDir + os.sep + 'configs')
+        #else:
+        #    projectConfigs = None
+        if self.unbaseImages.checkState() == QtCore.Qt.Checked:
+            unbaseImages = True
         else:
-            projectConfigs = None
-        return (projectFile, projectWorkdir, projectConfigs)
+            unbaseImages = False
+        if self.checkBox_SaveCaptures.checkState() == QtCore.Qt.Checked:
+            saveCaptures = True
+        else:
+            saveCaptures = False
+        return (projectFile, projectWorkdir, projectConfigs, unbaseImages, saveCaptures)
 
     def accept(self):
 
         settings = self.saveProjectSettings()
+        if settings == (None, None, None, False, False):
+            return
         globals.GApp.mainWindow.createProject(settings)
         QtGui.QDialog.accept(self)
 

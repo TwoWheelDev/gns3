@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -42,8 +41,10 @@ class IOSRouter3700(IOSRouter, IOSRouter3700Defaults):
     def create_router(self):
 
         IOSRouter.create_router(self)
-        # Automatically assign NM-16ESW in slot 1
+        # EtherSwitch router special case: automatically assign NM-16ESW in slot 1
         if not self.default_symbol:
             config = self.create_config()
             config['slots'][1] = 'NM-16ESW'
             self.set_config(config)
+
+            

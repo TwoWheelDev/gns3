@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -21,6 +20,7 @@
 
 from PyQt4 import QtCore, QtGui, QtSvg
 from GNS3.Ui.Form_SymbolDialog import Ui_SymbolDialog
+
 
 class SymbolDialog(QtGui.QDialog, Ui_SymbolDialog):
     """ SymbolManager class

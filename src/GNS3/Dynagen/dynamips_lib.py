@@ -1,6 +1,5 @@
 #!/usr/bin/python
-# vim: expandtab ts=4 sw=4 sts=4:
-# -*- coding: utf-8 -*-
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 
 """
 dynamips_lib.py
@@ -61,7 +60,7 @@ else:
     DEBUGGER = True
 
 
-EMULATED_SWITCHES = ['ETHSW', 'ATMSW', 'FRSW', 'Bridge', 'ATMBR']
+EMULATED_SWITCHES = ['ETHSW', 'ATMSW', 'FRSW', 'Bridge', 'ATMBR', 'Hub']
 
 ROUTERMODELS = (
     'c1700',
@@ -528,6 +527,26 @@ class Dynamips(object):
 class NIO(object):
     """abstract NIO class"""
 
+    def convert_bytes(self, my_bytes):
+        # To give human readable bytes
+        
+        my_bytes = float(my_bytes)
+        if my_bytes >= 1099511627776:
+            terabytes = my_bytes / 1099511627776
+            size = '%.2fTB' % terabytes
+        elif my_bytes >= 1073741824:
+            gigabytes = my_bytes / 1073741824
+            size = '%.2fGB' % gigabytes
+        elif my_bytes >= 1048576:
+            megabytes = my_bytes / 1048576
+            size = '%.2fMB' % megabytes
+        elif my_bytes >= 1024:
+            kilobytes = my_bytes / 1024
+            size = '%.2fKB' % kilobytes
+        else:
+            size = '%.0f bytes' % my_bytes
+        return size
+
     def get_stats(self, dynamips, nio_name):
         #print "ADEBUG: dynamips_lib.py: NIO::get_stats(dynamips = %s, nio_name = %s)" % (str(dynamips), str(nio_name))
         # dynamips < 0.2.8 RC3 doesn't support NIO stats
@@ -537,7 +556,7 @@ class NIO(object):
         #print "ADEBUG: dynamips_lib.py: NIO::get_stats(), result1 = %s" % str(result)
         if result.startswith("100"):
             stats = result[4:].split()
-            return ("\n        " + stats[0] + ' packets in / ' + stats[1] + ' packets out (' + stats[2] + ' bytes in / ' + stats[3] + ' bytes out)')
+            return ("\n        " + stats[0] + ' packets in / ' + stats[1] + ' packets out (' + self.convert_bytes(stats[2]) + ' in / ' + self.convert_bytes(stats[3]) + ' out)')
         return ""
 
     def reset_stats(self, dynamips, nio_name):
@@ -650,12 +669,18 @@ class NIO_udp(NIO):
             return ' is connected to ATM switch ' + remote_device.name + ' port ' + str(remote_port) + " " + stats
         elif isinstance(remote_device, ETHSW):
             return ' is connected to ethernet switch ' + remote_device.name + ' port ' + str(remote_port) + " " + stats
+        elif isinstance(remote_device, Hub):
+            return ' is connected to ethernet hub ' + remote_device.name + ' port ' + str(remote_port) + " " + stats
         elif isinstance(remote_device, ATMBR):
             return ' is connected to ATM bridge ' + remote_device.name + ' port ' + str(remote_port) + " " + stats
         elif isinstance(remote_device, AnyEmuDevice):
             return ' is connected to emulated device ' + remote_device.name + ' Ethernet' + str(remote_port) + " " + stats
         elif isinstance(remote_device, AnyVBoxEmuDevice):
             return ' is connected to virtualized device ' + remote_device.name + ' Ethernet' + str(remote_port) + " " + stats
+        elif isinstance(remote_device, Bridge):
+            return ' is connected to bridged LAN ' + remote_device.name + ' ' + stats
+        else:
+            return ' is connected to an unknown destination ' + stats
 
     def __getreverse_nio(self):
         return self.__reverse_nio
@@ -2111,6 +2136,10 @@ class Router(Dynamips_device):
         self.__sparsemem = 0
         self.__idlemax = 1500
         self.__idlesleep = 30
+        self.starttime = int(time.time())
+        self.suspendtime = self.starttime
+        self.stoptime = self.starttime
+        self.waittime = 0
         #this sets the default values for this module that do not change
         self._defaults = {
             'image': None,
@@ -2323,6 +2352,11 @@ class Router(Dynamips_device):
             self.__setidlemax(self.__idlemax)
         if self.__idlesleep != self._defaults['idlesleep']:
             self.__setidlesleep(self.__idlesleep)
+
+        # Updates the starttime.
+        self.starttime = int(time.time())
+        self.waittime = 0
+
         return r
 
     def stop(self):
@@ -2335,6 +2369,10 @@ class Router(Dynamips_device):
         # mark it stopped, even if dynamips has crashed
         self.__state = 'stopped'
         r = send(self.__d, 'vm stop %s' % self.__name)
+
+        # Updates the starttime.
+        self.stoptime = int(time.time())
+
         return r
 
     def suspend(self):
@@ -2349,6 +2387,10 @@ class Router(Dynamips_device):
         # mark it suspended, even if dynamips has crashed
         self.__state = 'suspended'
         r = send(self.__d, 'vm suspend %s' % self.__name)
+
+        # Updates the starttime.
+        self.suspendtime = int(time.time())
+
         return r
 
     def resume(self):
@@ -2362,6 +2404,10 @@ class Router(Dynamips_device):
 
         r = send(self.__d, 'vm resume %s' % self.__name)
         self.__state = 'running'
+
+        # Updates the starttime.
+        self.waittime += (int(time.time()) - self.suspendtime)
+
         return r
 
     def slot_info(self):
@@ -2468,18 +2514,37 @@ class Router(Dynamips_device):
         #get info about idlepc value
         idlepc_info = ""
         if self.idlepc == None:
-            idlepc_info = ' with no idle-pc value'
+            idlepc_info = ' with no idlepc value'
         else:
-            idlepc_info = ' with idle-pc value of ' + self.idlepc + '\n  Idle-max value is ' + str(self.idlemax) + ', idlesleep is ' + str(self.idlesleep) + ' ms'
+            idlepc_info = ' with idlepc value of ' + self.idlepc + '\n  idlemax value is ' + str(self.idlemax) + ', idlesleep is ' + str(self.idlesleep) + ' ms'
             #TODO idlepcdrift is returning something like this ['101 Timer Drift: 0', '101 Pending Timer IRQ: 0']....wtf?
             #idlepc_info = idlepc_info + + " ms, idlepcdrift "+str(device.idlepcdrift)
 
         #gather information about PA, their interfaces and connections
         slot_info = self.slot_info()
 
+        # Uptime of the router.
+        def utimetotxt(utime):
+            (zmin, zsec) = divmod(utime, 60)
+            (zhur, zmin) = divmod(zmin, 60)
+            (zday, zhur) = divmod(zhur, 24)
+            utxt = ('%d %s, ' % (zday, 'days'  if (zday != 1) else 'day')  if (zday > 0) else '') + \
+                   ('%d %s, ' % (zhur, 'hours' if (zhur != 1) else 'hour') if ((zhur > 0) or (zday > 0)) else '') + \
+                   ('%d %s'   % (zmin, 'mins'  if (zmin != 1) else 'min'))
+            return utxt
+
+        if (self.state == 'running'):
+            txtuptime = '  Router running time is ' + utimetotxt((int(time.time()) - self.starttime) - self.waittime) + '\n'
+        elif (self.state == 'suspended'):
+            txtuptime = '  Router suspended time is ' + utimetotxt(int(time.time()) - self.suspendtime) + '\n'
+        elif (self.state == 'stopped'):
+            txtuptime = '  Router stopped time is ' + utimetotxt(int(time.time()) - self.stoptime) + '\n'
+        else:
+            txtuptime = '  Router uptime is unknown\n'
+
         #create final output, with proper indentation
         return 'Router ' + self.name + ' is ' + self.state + '\n' + '  Hardware is dynamips emulated Cisco ' + model + router_specific_info + ' with ' + \
-               str(self.ram) + ' MB RAM\n' + '  Router\'s hypervisor runs on ' + self.dynamips.host + ":" + str(self.dynamips.port) + \
+               str(self.ram) + ' MB RAM\n' + txtuptime + '  Router\'s hypervisor runs on ' + self.dynamips.host + ":" + str(self.dynamips.port) + \
                ', console is on port ' + str(self.console) + ', aux is on port ' + str(self.aux) + image_info + idlepc_info + '\n' + jitsharing_group_info  + '\n  ' + str(self.nvram) + ' KB NVRAM, ' + str(self.disk0) + \
                ' MB disk0 size, ' + str(self.disk1) + ' MB disk1 size' + '\n' + slot_info
 
@@ -3087,7 +3152,10 @@ class Router(Dynamips_device):
     def formatted_ghost_file(self):
         """ Return a properly formatted ghost_file for use with get/setghostfile"""
 
-        return self.imagename + '-' + self.dynamips.host  + '.ghost'
+        # Replace specials characters in 'drive:\filename' for Dynagen in Linux and Dynamips in MS Windows or viceversa.
+        tmpghst = self.imagename + '-' + self.dynamips.host  + '.ghost'
+        tmpghst = tmpghst.replace('\\','-').replace('/','-').replace(':','-')
+        return tmpghst
 
     def __getdynamips(self):
         """ Returns the dynamips server on which this device resides
@@ -4745,6 +4813,117 @@ class ETHSW(Emulated_switch):
             (porttype, vlan, nio, unused)= self.mapping[port1]
             subconfig[e][str(port1)] = porttype + ' ' + str(vlan) + ' ' + nio.config_info()
 
+###############################################################################
+
+class Hub(Emulated_switch):
+
+    """ Creates a new hub instance
+        dynamips: a Dynamips object
+        name: An optional name
+    """
+
+    _instance_count = 0
+
+    def __init__(self, dynamips, name=None, create=True):
+
+        self._d = dynamips
+        self._instance = Hub._instance_count
+        Hub._instance_count += 1
+        if name == None:
+            self._name = 'h' + str(self._instance)
+        else:
+            self._name = name
+
+        self.nios = {}  # A dict of NETIO objects indexed by hub port
+        self.slot = {}
+        self.slot[0] = self
+        if create:
+            send(self._d, 'nio_bridge create ' + self._name)
+
+    def delete(self):
+        """ Delete this hub instance from the back end
+        """
+
+        send(self._d, 'nio_bridge delete ' + self._name)
+
+    def info(self):
+        """return the string with info about this device"""
+
+        info = "Hub " + self._name + " is always-on\n  Hardware is dynamips emulated simple ethernet hub\n  Hub's hypervisor runs on " + self._d.host + ':' + str(self._d.port) + '\n'
+
+        keys = self.nios.keys()
+        keys.sort()
+        map_info = ''
+        for port1 in keys:
+            nio = self.nios[port1]
+            map_info += '   Port '+ str(port1) + ' ' + nio.info() + '\n'
+        return info + map_info
+
+    def disconnect(self, localint, localport):
+        """ Disconnect this port from port on another device
+            port: A port on this adapter
+        """
+        try:
+            nio = self.nio(localport).name
+        except DynamipsWarning, e:
+            raise DynamipsError, e
+
+        send(self._d, 'nio_bridge remove_nio %s %s' % (self._name, nio))
+
+    def delete_nio(self, localint, localport):
+        """ Deletes this nio from the device """
+
+        #delete the nio and remove it from the dictionary
+        self.nios[localport].delete()
+        del self.nios[localport]
+
+
+    def nio(
+        self,
+        port,
+        nio=None,
+        ):
+        """ Returns the NETIO object for this port
+            or if nio is set, sets the NETIO for this port
+            port: a port on this adapter
+            nio: optional NETIO object to assign
+        """
+
+        if nio == None:
+            # Return the NETIO string
+            try:
+                return self.nios[port]
+            except KeyError:
+                return None
+
+        if isinstance(nio, NIO):
+            send(self._d, 'nio_bridge add_nio %s %s' % (self._name, nio.name))
+        else:
+            raise DynamipsError, 'invalid NIO type'
+
+        # Set the NETIO for this port
+        self.nios[port] = nio
+
+    def __getadapter(self):
+        """ Returns the adapter property
+        """
+
+        return 'Hub'
+
+    adapter = property(__getadapter, doc='The port adapter')
+
+    def config(self, subconfig):
+        """parse the all data structures associated with this ethsw and update the running_config properly"""
+
+        h = 'Hub ' + self.name
+        subconfig[h] = {}
+
+        keys = self.nios.keys()
+        keys.sort()
+        for port1 in keys:
+            nio= self.nios[port1]
+            subconfig[h][str(port1)] = nio.config_info()
+
 
 ###############################################################################
 
@@ -4862,10 +5041,13 @@ def gen_connect(
         # source and dest adapters are on the same dynamips server, perform loopback binding optimization
         src_ip = '127.0.0.1'
         dst_ip = '127.0.0.1'
+        
         #if the dynamips instances are different also compare the base udp port
-        if src_dynamips.port != dst_dynamips.port:
-            if abs(src_dynamips.udp - dst_dynamips.udp) <= 500:
-                dst_dynamips.udp = dst_dynamips.udp + 1000
+#This code is useless (at least for GNS3), leading to this bug: http://forum.gns3.net/post20422.html#p20422
+#         if src_dynamips.port != dst_dynamips.port:
+#             if abs(src_dynamips.udp - dst_dynamips.udp) < 100:
+#                 dst_dynamips.udp = dst_dynamips.udp + 100
+
     else:
         # source and dest are on different dynamips servers
         src_ip = src_dynamips.host

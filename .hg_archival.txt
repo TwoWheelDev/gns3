@@ -1,5 +1,5 @@
 repo: b2f14b6bbf1898f815c70f435a8c72a165f78f83
-node: 1a4f92828f839e5735229d84d3c87c505b465d28
-branch: GNS3-stable-0.8.3
-latesttag: GNS3-0.8.3
+node: ac0b21a6effc18f881bf30b0090d2669c3671a83
+branch: default
+latesttag: GNS3-0.8.5
 latesttagdistance: 1

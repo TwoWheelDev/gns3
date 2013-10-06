@@ -26,13 +26,28 @@ use warnings;
 
 my $style_utf8 = '# -*- coding: utf-8 -*-' . "\n";
 my $style_tabs = '# vim: expandtab ts=4 sw=4 sts=4:' . "\n";
+my $style_modeline = '# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:' . "\n";
 
-my @header = ($style_utf8, $style_tabs);
+my @toremove = ($style_utf8, $style_tabs);
+my @header = ($style_modeline);
 
 if (scalar(@ARGV) < 1)
 {
         print STDERR "usage: $0 <file.py> [...]\n";
         exit 1;
+}
+
+sub strip_data
+{
+        my $data = shift;
+        foreach (@toremove)
+        {
+                if ("$_" eq "$data")
+                {
+                        return "";
+                }
+        }
+        return $data;
 }
 
 foreach (@ARGV)
@@ -42,8 +57,10 @@ foreach (@ARGV)
         open IFILE, $filename or die "open $filename: $!.\n";
         open OFILE, ">", $_ or die "open $_: $!.\n";
         my @data = <IFILE>;
-        my @clean_data = map { s/\r\n/\n/g; $_; } @data;
         close IFILE;
+
+        my @clean_data = map { s/\r\n/\n/g; $_; } @data;
+        @clean_data = map { strip_data($_) } @clean_data;
         my $idx = 0;
         if (scalar(@clean_data) > 1 && $data[0] =~ m/^\#\!/)
         {

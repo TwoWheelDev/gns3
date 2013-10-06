@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Form_Snapshots.ui'
 #
-# Created: Thu Jul 12 21:13:31 2012
+# Created: Mon Sep  9 21:29:21 2013
 #      by: PyQt4 UI code generator 4.8.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -31,10 +31,10 @@ class Ui_Snapshots(object):
         self.pushButtonCreate.setText(QtGui.QApplication.translate("Snapshots", "Create", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButtonCreate.setObjectName(_fromUtf8("pushButtonCreate"))
         self.gridLayout.addWidget(self.pushButtonCreate, 1, 0, 1, 1)
-        self.pushButtonLoad = QtGui.QPushButton(Snapshots)
-        self.pushButtonLoad.setText(QtGui.QApplication.translate("Snapshots", "Load", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButtonLoad.setObjectName(_fromUtf8("pushButtonLoad"))
-        self.gridLayout.addWidget(self.pushButtonLoad, 1, 2, 1, 1)
+        self.pushButtonRestore = QtGui.QPushButton(Snapshots)
+        self.pushButtonRestore.setText(QtGui.QApplication.translate("Snapshots", "Restore", None, QtGui.QApplication.UnicodeUTF8))
+        self.pushButtonRestore.setObjectName(_fromUtf8("pushButtonRestore"))
+        self.gridLayout.addWidget(self.pushButtonRestore, 1, 2, 1, 1)
         self.buttonBox = QtGui.QDialogButtonBox(Snapshots)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Close)

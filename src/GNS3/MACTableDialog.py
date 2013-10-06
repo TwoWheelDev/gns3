@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# vim: expandtab ts=4 sw=4 sts=4:
+# vim: expandtab ts=4 sw=4 sts=4 fileencoding=utf-8:
 #
 # Copyright (C) 2007-2010 GNS3 Development Team (http://www.gns3.net/team).
 #
@@ -24,6 +23,7 @@ from GNS3.Ui.Form_MACTableDialog import Ui_MACTableDialog
 from GNS3.Utils import translate
 import GNS3.Dynagen.dynamips_lib as lib
 import socket
+
 
 class MACTableDialog(QtGui.QDialog, Ui_MACTableDialog):
     """ MACTableDialog class
@@ -87,5 +87,3 @@ class MACTableDialog(QtGui.QDialog, Ui_MACTableDialog):
         """
 
         QtGui.QDialog.accept(self)
-
-

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ConfigurationPages/Form_VirtualBoxPage.ui'
 #
-# Created: Thu Jul 12 21:13:34 2012
+# Created: Mon Sep  9 21:29:23 2013
 #      by: PyQt4 UI code generator 4.8.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -41,8 +41,11 @@ class Ui_VirtualBoxPage(object):
         self.gridLayout.addWidget(self.label_37, 1, 0, 1, 1)
         self.spinBoxNics = QtGui.QSpinBox(VirtualBoxPage)
         self.spinBoxNics.setEnabled(True)
+        self.spinBoxNics.setToolTip(QtGui.QApplication.translate("VirtualBoxPage", "Maximum NICs with PIIX3 chipset is 8.\n"
+"Maximum NICs with ICH9 chipset is 36.\n"
+"Please, see VirtualBox settings to change the chipset.", None, QtGui.QApplication.UnicodeUTF8))
         self.spinBoxNics.setMinimum(2)
-        self.spinBoxNics.setMaximum(8)
+        self.spinBoxNics.setMaximum(36)
         self.spinBoxNics.setSingleStep(1)
         self.spinBoxNics.setProperty("value", 6)
         self.spinBoxNics.setObjectName(_fromUtf8("spinBoxNics"))
@@ -67,8 +70,8 @@ class Ui_VirtualBoxPage(object):
         self.comboBoxNIC.setItemText(4, QtGui.QApplication.translate("VirtualBoxPage", "virtio", None, QtGui.QApplication.UnicodeUTF8))
         self.gridLayout.addWidget(self.comboBoxNIC, 2, 1, 1, 1)
         self.checkBoxVBoxFirstInterfaceManaged = QtGui.QCheckBox(VirtualBoxPage)
-        self.checkBoxVBoxFirstInterfaceManaged.setText(QtGui.QApplication.translate("VirtualBoxPage", "Do not use first NIC for connections with the host OS", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBoxVBoxFirstInterfaceManaged.setChecked(False)
+        self.checkBoxVBoxFirstInterfaceManaged.setText(QtGui.QApplication.translate("VirtualBoxPage", "Reserve first NIC for VirtualBox NAT to host OS", None, QtGui.QApplication.UnicodeUTF8))
+        self.checkBoxVBoxFirstInterfaceManaged.setChecked(True)
         self.checkBoxVBoxFirstInterfaceManaged.setObjectName(_fromUtf8("checkBoxVBoxFirstInterfaceManaged"))
         self.gridLayout.addWidget(self.checkBoxVBoxFirstInterfaceManaged, 3, 0, 1, 2)
         self.checkBoxVboxConsoleSupport = QtGui.QCheckBox(VirtualBoxPage)
@@ -76,6 +79,7 @@ class Ui_VirtualBoxPage(object):
         self.checkBoxVboxConsoleSupport.setObjectName(_fromUtf8("checkBoxVboxConsoleSupport"))
         self.gridLayout.addWidget(self.checkBoxVboxConsoleSupport, 4, 0, 1, 2)
         self.checkBoxVboxConsoleServer = QtGui.QCheckBox(VirtualBoxPage)
+        self.checkBoxVboxConsoleServer.setEnabled(False)
         self.checkBoxVboxConsoleServer.setText(QtGui.QApplication.translate("VirtualBoxPage", "Enable console server (for remote access)", None, QtGui.QApplication.UnicodeUTF8))
         self.checkBoxVboxConsoleServer.setObjectName(_fromUtf8("checkBoxVboxConsoleServer"))
         self.gridLayout.addWidget(self.checkBoxVboxConsoleServer, 5, 0, 1, 2)
