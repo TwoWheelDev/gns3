@@ -3,12 +3,7 @@
 
 set -e
 
-#DEBHELPER#
+rm -f /usr/local/share/examples/gns3/baseconfig.txt
+rm -f /usr/local/share/examples/gns3/baseconfig_sw.txt
 
-#Remove conf directory if required
-if [ "$1" = "purge" ]; then
-	if [ -d /etc/gns3 ]
-	then
-		rm -rf /etc/gns3
-	fi
-fi
+#DEBHELPER#
