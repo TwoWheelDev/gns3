@@ -3,7 +3,4 @@
 
 set -e
 
-rm -f /usr/local/share/examples/gns3/baseconfig.txt
-rm -f /usr/local/share/examples/gns3/baseconfig_sw.txt
-
 #DEBHELPER#

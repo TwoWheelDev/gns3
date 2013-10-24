@@ -12,8 +12,3 @@ if [ "$1" = "configure" ]; then
 fi
 
 #DEBHELPER#
-
-#Copy baseconfig files to examples directory
-if [ "$1" = "configure" ]; then
-	cp /usr/share/doc/gns3/baseconfig* /usr/local/share/examples/gns3/
-fi
