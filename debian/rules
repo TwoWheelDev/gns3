@@ -3,6 +3,8 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+export DH_ALWAYS_EXCLUDE=Lang_it.ts.gz
+
 %:
 	dh $@ --with python2
 
