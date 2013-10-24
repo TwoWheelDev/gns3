@@ -42,6 +42,11 @@ import re
 from tcp_pipe_proxy import PipeProxy
 
 if sys.platform.startswith("win"):
+    # automatically generate the typelib wrapper
+    import win32com.client
+    win32com.client.gencache.is_readonly = False
+    win32com.client.gencache.GetGeneratePath()
+
     import win32file
     import msvcrt
 
@@ -82,7 +87,7 @@ debugmsg(2, 'Starting vboxwrapper')
 debugmsg(1, "debuglevel =  %s" % debuglevel + os.linesep)
 
 __author__ = 'Thomas Pani, Jeremy Grossmann and Alexey Eromenko "Technologov"'
-__version__ = '0.8.5'
+__version__ = '0.8.6'
 
 PORT = 11525
 IP = ""
