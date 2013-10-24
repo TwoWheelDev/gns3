@@ -2,6 +2,7 @@ gns3 (0.8.6-1) unstable; urgency=low
 
   * [5d312bc7] Imported Upstream version 0.8.6
   * [44fe48e3] [rules] Add DH_ALWAYS_EXCLUDE=Lang_it.ts.gz
+  * [117338f3] Update VCS Fields
 
  -- Daniel Lintott <daniel@serverb.co.uk>  Thu, 24 Oct 2013 12:09:53 +0100
 
