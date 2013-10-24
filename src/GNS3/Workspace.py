@@ -1238,7 +1238,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
         globals.preferencesWindow.exec_()
         globals.preferencesWindow = None
 
-    def load_netfile(self, file):
+    def load_netfile(self, file, load_instructions=False):
         """ Load a .net file"""
 
         if file == None:
@@ -1258,6 +1258,8 @@ class Workspace(QMainWindow, Ui_MainWindow):
         # refresh tool menu to reflect the current working directory
         self.createToolsMenu()
         self.__launchProgressDialog('starting', translate("Workspace", "Starting nodes ..."), autostart=True)
+        if load_instructions:
+            self.__action_Instructions(silent=True)
 
     def __action_NewProject(self):
         """ Create a new project
@@ -1483,16 +1485,15 @@ class Workspace(QMainWindow, Ui_MainWindow):
         snapshot_dir = snapshotDir + os.sep + projectName.replace('.net', '') + '_' + name + '_snapshot_' + time.strftime("%d%m%y_%H%M%S")
         snapshot_configs = snapshot_dir + os.sep + 'configs'
 
-        if os.path.exists(snapshotDir + os.sep + 'working'):
-            snapshot_workdir = snapshot_dir + os.sep + 'working'
-        if os.path.exists(snapshotDir + os.sep + 'qemu-flash-drives'):
-            snapshot_qemu_flash_drives = snapshot_dir + os.sep + 'qemu-flash-drives'
-        if os.path.exists(snapshotDir + os.sep + 'captures'):
-            snapshot_captures = snapshot_dir + os.sep + 'captures'
-
         try:
-            os.mkdir(snapshot_dir)
-            #os.mkdir(snapshot_configs)
+            os.makedirs(snapshot_dir)
+            if os.path.exists(projectDir + os.sep + 'working'):
+                snapshot_workdir = snapshot_dir + os.sep + 'working'
+            if os.path.exists(projectDir + os.sep + 'qemu-flash-drives'):
+                snapshot_qemu_flash_drives = snapshot_dir + os.sep + 'qemu-flash-drives'
+            if os.path.exists(projectDir + os.sep + 'captures'):
+                snapshot_captures = snapshot_dir + os.sep + 'captures'
+            os.mkdir(snapshot_configs)
             if snapshot_workdir:
                 os.mkdir(snapshot_workdir)
             if snapshot_qemu_flash_drives:
@@ -1707,6 +1708,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
                 return
 
         self.loadNetfile(path)
+        self.__action_Instructions(silent=True)
 
     def __addToRecentFiles(self, path):
         """ Add path to recent files menu
@@ -1779,7 +1781,7 @@ class Workspace(QMainWindow, Ui_MainWindow):
             self.load_netfile(path)
             self.__addToRecentFiles(path)
             globals.GApp.topology.changed = False
-            self.__action_Instructions(silent=True)
+            #self.__action_Instructions(silent=True)
         except IOError, (errno, strerror):
             QtGui.QMessageBox.critical(self, 'Open',  u'Open: ' + strerror)
         except (lib.DynamipsErrorHandled, socket.error):
