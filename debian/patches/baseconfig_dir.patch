@@ -1,0 +1,18 @@
+Description: Modify BASECONFIG_DIR
+ Modify the BASECONFIG_DIR default to find the baseconfig.txt
+ and baseconfig_sw.txt from /usr/share/doc/gns3/
+Author: Daniel Lintott <daniel@serverb.co.uk>
+---
+Index: gns3/src/GNS3/Config/Defaults.py
+===================================================================
+--- gns3.orig/src/GNS3/Config/Defaults.py	2013-10-24 11:57:33.518105996 +0100
++++ gns3/src/GNS3/Config/Defaults.py	2013-10-24 22:34:35.869585964 +0100
+@@ -48,7 +48,7 @@
+ elif sys.platform.startswith('win'):
+     BASECONFIG_DIR = ''
+ else:
+-    BASECONFIG_DIR = '/usr/local/share/examples/gns3/'
++    BASECONFIG_DIR = '/usr/share/doc/gns3/'
+ 
+ # Default path to qemuwrapper
+ if sys.platform.startswith('win'):
