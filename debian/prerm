@@ -1,6 +1,0 @@
-#!/bin/sh
-#prerm script for gns3
-
-set -e
-
-#DEBHELPER#
