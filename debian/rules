@@ -8,18 +8,6 @@ export DH_ALWAYS_EXCLUDE=Lang_it.ts.gz
 %:
 	dh $@ --with python2
 
-override_dh_auto_build:
-
 override_dh_auto_install:
-
-override_dh_install:
-	dh_install -XCOPYING
-
-override_dh_fixperms:
-	dh_fixperms
-	chmod -x debian/gns3/usr/share/gns3/GNS3/Langs/*
-	chmod +x debian/gns3/usr/share/gns3/GNS3/Langs/*.sh
-	chmod -x debian/gns3/usr/share/gns3/GNS3/Ui/*.ui
-	chmod -x debian/gns3/usr/share/gns3/GNS3/Ui/ConfigurationPages/*.ui
-	chmod -x debian/gns3/usr/share/gns3/GNS3/Dynagen/*
-	chmod -x debian/gns3/usr/share/gns3/GNS3/Unpack/*
+	python setup.py install --force --root=$(CURDIR)/debian/gns3 --no-compile -O0 --install-layout=deb --install-lib=/usr/share/gns3 --install-scripts=/usr/share/gns3
+override_dh_auto_build:

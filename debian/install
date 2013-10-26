@@ -1,12 +1,3 @@
-#QemuWrapper and VBoxWrapper
-qemuwrapper/qemuwrapper.py usr/share/gns3/
-vboxwrapper/tcp_pipe_proxy.py usr/share/gns3/
-vboxwrapper/vboxcontroller_4_1.py usr/share/gns3/
-vboxwrapper/vboxwrapper.py usr/share/gns3/
-#Main GNS3 Program
-src/* usr/share/gns3/
-#GNS3 Launcher Script
-gns3.pyw /usr/share/gns3/
 #Additional Packaging Items
 debian/additional/applications/* usr/share/applications/
 debian/additional/icons/* usr/share/icons/
