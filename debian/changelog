@@ -14,7 +14,7 @@ gns3 (0.8.6-1) unstable; urgency=low
   * [117338f3] Update VCS Fields
   * [bfa5848e] Add patch to modify BASECONFIG_DIR
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 25 Oct 2013 12:46:20 +0100
+ -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 26 Oct 2013 15:15:20 +0100
 
 gns3 (0.8.3-0.1) unstable; urgency=low
 
