@@ -1,0 +1,14 @@
+Description: Fix Segmentation Fault
+Author: Daniel Lintott <daniel@serverb.co.uk>
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/gns3/+bug/1152884
+diff --git a/src/GNS3/Application.py b/src/GNS3/Application.py
+--- a/src/GNS3/Application.py
++++ b/src/GNS3/Application.py
+@@ -675,6 +675,7 @@ class Application(QApplication, Singleton):
+                 ConfDB().set("GUIState/DoNotShowTipsDialog", self.mainWindow.tips_dialog.checkBoxDontShowAgain.isChecked())
+             self.syncConf()
+ 
++        self.deleteLater()        
+         sys.exit(retcode)
+ 
+     def syncConf(self):
