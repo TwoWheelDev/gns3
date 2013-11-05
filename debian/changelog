@@ -1,3 +1,9 @@
+gns3 (0.8.6-2) unstable; urgency=low
+
+  * [5b617dd9] Fix segmentation fault (LP: #1152884)
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 05 Nov 2013 16:50:51 +0000
+
 gns3 (0.8.6-1) unstable; urgency=low
 
   * New maintainer (Closes: #725345)
