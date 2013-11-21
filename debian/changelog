@@ -1,3 +1,10 @@
+gns3 (0.8.6-3) unstable; urgency=low
+
+  * [2a3933ca] Add build-depends and rules for lrelease
+  * [d6ebfbb7] Fix missing variable in Spanish translation (Closes: #714112)
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Thu, 21 Nov 2013 21:54:11 +0000
+
 gns3 (0.8.6-2) unstable; urgency=low
 
   * [5b617dd9] Fix segmentation fault (LP: #1152884)
