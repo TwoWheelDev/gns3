@@ -1,0 +1,62 @@
+Description: Fix error in Lang_es.ts
+ A string translation in Lang_es.ts was missing a string variable, 
+ causing a python error
+Author: Daniel Lintott <daniel@serverb.co.uk>
+Bug-Debian: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=714112
+Index: gns3/src/GNS3/Langs/Lang_es.ts
+===================================================================
+--- gns3.orig/src/GNS3/Langs/Lang_es.ts	2013-11-21 21:19:42.000000000 +0000
++++ gns3/src/GNS3/Langs/Lang_es.ts	2013-11-21 21:24:08.018977647 +0000
+@@ -1,5 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<!DOCTYPE TS><TS version="2.0" language="es" sourcelanguage="">
++<!DOCTYPE TS>
++<TS version="2.0" language="es">
+ <context>
+     <name>ASA initrd</name>
+     <message>
+@@ -368,7 +369,7 @@
+ &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; text-decoration: underline; color:#0000ff;&quot;&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+         <translation type="unfinished"></translation>
+     </message>
+-    <message encoding="UTF-8">
++    <message utf8="true">
+         <location filename="../Ui/Form_About.py" line="80"/>
+         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+ &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+@@ -2773,7 +2774,7 @@
+         <source>Console to all devices</source>
+         <translation>Abrir consola en todos los dispositivos</translation>
+     </message>
+-    <message encoding="UTF-8">
++    <message utf8="true">
+         <location filename="../Ui/Form_MainWindow.py" line="337"/>
+         <source>Save topology &amp;as…</source>
+         <translation>Guardar topologia &amp;como ...</translation>
+@@ -2803,7 +2804,7 @@
+         <source>New blank project</source>
+         <translation>Nuevo proyecto en blanco</translation>
+     </message>
+-    <message encoding="UTF-8">
++    <message utf8="true">
+         <location filename="../Ui/Form_MainWindow.py" line="516"/>
+         <source>&amp;Save project as…</source>
+         <translation>&amp;Guardar proyecto como...</translation>
+@@ -5837,7 +5838,7 @@
+         <source>Rotation:</source>
+         <translation>Rotacion:</translation>
+     </message>
+-    <message encoding="UTF-8">
++    <message utf8="true">
+         <location filename="../Ui/Form_StyleDialog.py" line="66"/>
+         <source>°</source>
+         <translation>°</translation>
+@@ -6702,7 +6703,7 @@
+     <message>
+         <location filename="../UndoFramework.py" line="165"/>
+         <source>Delete link: %s (%s) -&gt; %s (%s)</source>
+-        <translation>Eliminar vinculo: %s (%s) -&gt; (%s)</translation>
++        <translation>Eliminar vinculo: %s (%s) -&gt; %s (%s)</translation>
+     </message>
+     <message>
+         <location filename="../UndoFramework.py" line="202"/>
