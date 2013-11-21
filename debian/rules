@@ -9,5 +9,7 @@ export DH_ALWAYS_EXCLUDE=Lang_it.ts.gz
 	dh $@ --with python2
 
 override_dh_auto_install:
+	rm -rf src/GNS3/Langs/Lang_*.qm		
+	lrelease src/GNS3/Langs/Lang_*.ts
 	python setup.py install --force --root=$(CURDIR)/debian/gns3 --no-compile -O0 --install-layout=deb --install-lib=/usr/share/gns3 --install-scripts=/usr/share/gns3
 override_dh_auto_build:
