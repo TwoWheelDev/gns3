@@ -1,4 +1,4 @@
-gns3 (0.8.6-4) unstable; urgency=low
+gns3 (0.8.6-4) UNRELEASED; urgency=low
 
   * [86d4d03c] Bump standards-version to 3.9.5 - no changes
   * [4e6276fc] d/control - Modify build-depends to fix FTBFS on Ubuntu
