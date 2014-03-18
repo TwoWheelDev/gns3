@@ -1,3 +1,9 @@
+gns3 (0.8.6-3~bpo70+1) wheezy-backports; urgency=medium
+
+  * Rebuild for wheezy-backports.
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 18 Mar 2014 16:18:23 +0000
+
 gns3 (0.8.6-3) unstable; urgency=low
 
   * [2a3933ca] Add build-depends and rules for lrelease
