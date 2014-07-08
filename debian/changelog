@@ -1,9 +1,16 @@
-gns3 (0.8.6-4) UNRELEASED; urgency=low
+gns3 (0.8.7-1) unstable; urgency=medium
 
-  * [86d4d03c] Bump standards-version to 3.9.5 - no changes
-  * [4e6276fc] d/control - Modify build-depends to fix FTBFS on Ubuntu
+  * Imported Upstream version 0.8.7
+  * Bump standards-version to 3.9.5 - no changes
+  * d/control - Modify build-depends to fix FTBFS on Ubuntu
+  * Remove patches applied upstream.
+     + Lang_es.patch
+     + segfault.patch
+  * Update patch headers
+  * Update copyright years
+  * Separate (Build-)Depends onto seperate lines
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Mon, 10 Feb 2014 12:28:20 +0000
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 08 Jul 2014 17:30:33 +0100
 
 gns3 (0.8.6-3) unstable; urgency=low
 
