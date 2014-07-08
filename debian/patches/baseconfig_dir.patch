@@ -2,6 +2,7 @@ Description: Modify BASECONFIG_DIR
  Modify the BASECONFIG_DIR default to find the baseconfig.txt
  and baseconfig_sw.txt from /usr/share/doc/gns3/
 Author: Daniel Lintott <daniel@serverb.co.uk>
+Forwarded: Not needed, debian specific
 ---
 Index: gns3/src/GNS3/Config/Defaults.py
 ===================================================================
