@@ -1,4 +1,2 @@
 baseconfig_dir.patch
 setup.py.patch
-segfault.patch
-Lang_es.patch
