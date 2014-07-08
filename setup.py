@@ -8,7 +8,7 @@ from distutils.core import setup, Extension
 from glob import glob
 
 # current version of GNS3
-VERSION = "0.8.6"
+VERSION = "0.8.7"
 
 try:
     # delete previous build
@@ -198,7 +198,7 @@ elif sys.platform.startswith('darwin'):
 
     print '*** Installing Dynamips ***'
     os.system('cp ../dynamips-0.2.8-RC3-community-OSX.intel64.bin ./GNS3.app/Contents/Resources')
-    os.system('cp ../dynamips-0.2.10-OSX.intel64.bin ./GNS3.app/Contents/Resources')
+    os.system('cp ../dynamips ./GNS3.app/Contents/Resources')
 
     print '*** Installing Qemu 0.11.0 ***'
     os.system('mkdir -p ./GNS3.app/Contents/Resources/Qemu-0.11.0')
@@ -220,7 +220,7 @@ elif sys.platform.startswith('darwin'):
     os.chmod('./GNS3.app/Contents/Resources/Qemu-0.14.1/bin/qemu-system-x86_64', 0755)
     os.chmod('./GNS3.app/Contents/Resources/Qemu-0.14.1/bin/qemu-img', 0755)
     os.chmod('./GNS3.app/Contents/Resources/dynamips-0.2.8-RC3-community-OSX.intel64.bin', 0755)
-    os.chmod('./GNS3.app/Contents/Resources/dynamips-0.2.10-OSX.intel64.bin', 0755)
+    os.chmod('./GNS3.app/Contents/Resources/dynamips', 0755)
     os.chmod('./GNS3.app/Contents/Resources/vpcs', 0755)
 
     print '*** Compiling & installing VBoxWrapper ***'
