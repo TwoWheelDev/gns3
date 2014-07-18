@@ -1,3 +1,15 @@
+gns3 (0.8.7-1~ppa1) quantal; urgency=medium
+
+  * Imported Upstream version 0.8.7
+  * Remove patches applied upstream.
+     + Lang_es.patch
+     + segfault.patch
+  * Update patch headers
+  * Update copyright years
+  * Separate (Build-)Depends onto seperate lines
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 18 Jul 2014 10:13:18 +0100
+
 gns3 (0.8.6-1~ppa4) quantal; urgency=low
 
   * [7d75d02d] Add Spanish translation patch
