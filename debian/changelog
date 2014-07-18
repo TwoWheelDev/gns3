@@ -1,50 +1,57 @@
-gns3 (0.8.7-1) unstable; urgency=medium
+gns3 (0.8.6-1~ppa4) quantal; urgency=low
 
-  * Imported Upstream version 0.8.7
-  * Bump standards-version to 3.9.5 - no changes
-  * d/control - Modify build-depends to fix FTBFS on Ubuntu
-  * Remove patches applied upstream.
-     + Lang_es.patch
-     + segfault.patch
-  * Update patch headers
-  * Update copyright years
-  * Separate (Build-)Depends onto seperate lines
+  * [7d75d02d] Add Spanish translation patch
+  * [d37eb878] debian/control     
+		+ Bump Standards Version to 3.9.5 (No changes)     
+		+ Add build-depends on libqt4-dev debian/rules     
+	       debian/rules
+		+ Regenerate qt translation files at build time
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 08 Jul 2014 17:30:33 +0100
+ -- Daniel Lintott <daniel@serverb.co.uk>  Mon, 10 Feb 2014 19:39:26 +0000
 
-gns3 (0.8.6-3) unstable; urgency=low
+gns3 (0.8.6-1~ppa3) quantal; urgency=low
 
-  * [2a3933ca] Add build-depends and rules for lrelease
-  * [d6ebfbb7] Fix missing variable in Spanish translation (Closes: #714112)
+  * [4953970d] Fix segmentation fault (LP: #1152884)
+  * [a5768965] Update packaging
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Thu, 21 Nov 2013 21:54:11 +0000
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 05 Nov 2013 16:10:17 +0000
 
-gns3 (0.8.6-2) unstable; urgency=low
+gns3 (0.8.6-1~ppa2) quantal; urgency=low
 
-  * [5b617dd9] Fix segmentation fault (LP: #1152884)
+  * [0243732b] [control] Update VCS fields
+  * [70808218] Update postinst, prerm, postrm scripts
+  * [31814b3d] Remove dh_installdirs file
+  * [6febe14f] Add baseconfig_dir.patch
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 05 Nov 2013 16:50:51 +0000
+ -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 25 Oct 2013 14:07:37 +0100
 
-gns3 (0.8.6-1) unstable; urgency=low
+gns3 (0.8.6-1~ppa1) quantal; urgency=low
 
-  * New maintainer (Closes: #725345)
-  * [5d312bc7] Imported Upstream version 0.8.6
-  * [231483cb] Switch build-system to debhelper
-  * [f0792800] Bump standards version to 3.9.4
-  * [f23759cf] Switch copyright to machine readable format (DEP-5) and 
-  update for new maintainer
-  * [17f68dca] Update postinst, postrm scripts. Create prerm script
-  * [26b1a6bd] Update debian/watch
-  * [e2aef91e] Added dependencies for xdotool, xterm (Closes: #626464)
-  * [4065b7d8] Add recommends: wireshark (Closes: #622159)
-  * [44fe48e3] [rules] Add DH_ALWAYS_EXCLUDE=Lang_it.ts.gz
-  * [117338f3] Update VCS Fields
-  * [bfa5848e] Add patch to modify BASECONFIG_DIR
+  * Imported Upstream version 0.8.6
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 26 Oct 2013 15:15:20 +0100
+ -- Daniel Lintott <daniel@serverb.co.uk>  Thu, 24 Oct 2013 10:34:29 +0100
+
+gns3 (0.8.5-0ppa1) quantal; urgency=low
+
+  * Include debian/watch file
+  * Fixed debian/changelog
+  * Exclude additional license from dynagen scripts
+  * debian/control: Added VCS Fields and additional dependencies 
+  * debian/copyright: Added dynagen copyright
+  * Imported Upstream version 0.8.5
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Fri, 13 Sep 2013 11:53:03 +0100
+
+gns3 (0.8.4-1ppa1) quantal; urgency=low
+
+  * Imported Upstream Version 0.8.4
+  * Migrated to PPA for Ubuntu
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Sat, 06 Jul 2013 20:17:16 +0100
 
 gns3 (0.8.3-0.1) unstable; urgency=low
 
+  [ Zang MingJie ]
   * Non-maintainer upload.
   * Imported Upstream version 0.8.3 (Closes: #665979)
 
