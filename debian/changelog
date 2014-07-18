@@ -1,4 +1,4 @@
-gns3 (0.8.7-1~ppa1) quantal; urgency=medium
+gns3 (0.8.7-1~ppa1) trusty; urgency=medium
 
   * Imported Upstream version 0.8.7
   * Remove patches applied upstream.
