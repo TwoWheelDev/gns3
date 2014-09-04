@@ -1,8 +1,16 @@
-gns3 (0.8.6-3~bpo70+1) wheezy-backports; urgency=medium
+gns3 (0.8.7-1) unstable; urgency=medium
 
-  * Rebuild for wheezy-backports.
+  * Imported Upstream version 0.8.7
+  * Bump standards-version to 3.9.5 - no changes
+  * d/control - Modify build-depends to fix FTBFS on Ubuntu
+  * Remove patches applied upstream.
+     + Lang_es.patch
+     + segfault.patch
+  * Update patch headers
+  * Update copyright years
+  * Separate (Build-)Depends onto seperate lines
 
- -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 18 Mar 2014 16:24:17 +0000
+ -- Daniel Lintott <daniel@serverb.co.uk>  Tue, 08 Jul 2014 17:30:33 +0100
 
 gns3 (0.8.6-3) unstable; urgency=low
 

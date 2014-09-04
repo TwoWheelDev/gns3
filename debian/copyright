@@ -3,7 +3,7 @@ Upstream-Name: gns3
 Source: http://www.gns3.net
 
 Files: *
-Copyright: 2006-2013 Jeremy Grossmann
+Copyright: 2006-2014 Jeremy Grossmann
 		     Xavier Alt
 	     	     Aurelien Levesque
 		     David Ruiz
@@ -15,7 +15,7 @@ Copyright:	    Greg Anuzelli
 License: GPL-2.0+
 
 Files: debian/*
-Copyright: 2013 Daniel Lintott <daniel@serverb.co.uk>
+Copyright: 2013-2014 Daniel Lintott <daniel@serverb.co.uk>
 License: GPL-2.0+
 
 License: GPL-2.0+

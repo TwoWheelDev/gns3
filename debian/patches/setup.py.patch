@@ -1,6 +1,7 @@
 Description: Modify setup.py to not install to /usr/local/share/
 Author: Daniel Lintott <daniel@serverb.co.uk>
-
+Forwarded: Not needed, debian specific
+---
 Index: gns3-0.8.6/setup.py
 ===================================================================
 --- gns3-0.8.6.orig/setup.py	2013-10-26 12:52:22.628993000 +0100

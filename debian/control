@@ -2,8 +2,10 @@ Source: gns3
 Section: contrib/net
 Priority: optional
 Maintainer: Daniel Lintott <daniel@serverb.co.uk>
-Build-Depends: debhelper (>= 9), python, qt4-linguist-tools
-Standards-Version: 3.9.4
+Build-Depends: debhelper (>= 9),
+ libqt4-dev,
+ python
+Standards-Version: 3.9.5
 Homepage: http://www.gns3.net/
 Vcs-Browser: https://github.com/dlintott/gns3
 Vcs-Git: https://github.com/dlintott/gns3.git
@@ -11,9 +13,11 @@ X-Python-Version: >= 2.6
 
 Package: gns3
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, dynamips (>=0.2.8), python-qt4 (>=4.5), xdotool, xterm
-Conflicts: gns3
-Replaces: gns3
+Depends: ${misc:Depends}, ${python:Depends},
+ dynamips (>=0.2.8),
+ python-qt4 (>=4.5),
+ xdotool,
+ xterm
 Recommends: wireshark
 Description: Graphical Network Simulator
  GNS3 is a graphical network simulator that allows simulation of
