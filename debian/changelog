@@ -1,3 +1,11 @@
+gns3 (0.8.7-2) unstable; urgency=medium
+
+  * Do not install files needed by the program to /usr/share/doc
+    (Closes: #771135)
+  * Add dh-python to build-depends
+
+ -- Daniel Lintott <daniel@serverb.co.uk>  Thu, 27 Nov 2014 19:56:04 +0000
+
 gns3 (0.8.7-1) unstable; urgency=medium
 
   * Imported Upstream version 0.8.7
