@@ -2,3 +2,4 @@
 debian/additional/applications/* usr/share/applications/
 debian/additional/icons/* usr/share/icons/
 debian/additional/pixmaps/* usr/share/pixmaps/
+debian/additional/gns3.ini usr/share/gns3/
